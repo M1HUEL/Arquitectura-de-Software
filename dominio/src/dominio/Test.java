@@ -45,7 +45,8 @@ public class Test implements IReceptorExterno {
   }
 
   public void enviarMensaje(String jugador, int x, int y) {
-    System.out.println("Dominio: enviando confirmación de movimiento de " + jugador + " a (" + x + ", " + y + ")");
+    System.out.println("Dominio: enviando confirmación de movimiento de "
+      + jugador + " a (" + x + ", " + y + ")");
     byte[] contenido = Serializador.serializar(salida -> {
       salida.writeUTF(jugador);
       salida.writeInt(x);
@@ -61,11 +62,13 @@ public class Test implements IReceptorExterno {
     if (!Tipos.MOVIMIENTO.equals(mensaje.tipo())) {
       return;
     }
-    try (DataInputStream entrada = new DataInputStream(new ByteArrayInputStream(mensaje.contenido()))) {
+    try (DataInputStream entrada = new DataInputStream(
+      new ByteArrayInputStream(mensaje.contenido()))) {
       String jugador = entrada.readUTF();
       int x = entrada.readInt();
       int y = entrada.readInt();
-      System.out.println("Dominio: movimiento recibido de " + jugador + " a (" + x + ", " + y + ")");
+      System.out.println("Dominio: movimiento recibido de "
+        + jugador + " a (" + x + ", " + y + ")");
       enviarMensaje(jugador, x, y);
     } catch (IOException e) {
       throw new IllegalArgumentException("Contenido inválido", e);

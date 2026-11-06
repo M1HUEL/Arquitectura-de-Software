@@ -20,7 +20,7 @@ public record Mensaje(String tipo, byte[] contenido) {
     }
     if (contenido.length > LONGITUD_MAXIMA_CONTENIDO) {
       throw new IllegalArgumentException(
-          "El contenido excede el máximo de " + LONGITUD_MAXIMA_CONTENIDO + " bytes");
+        "El contenido excede el máximo de " + LONGITUD_MAXIMA_CONTENIDO + " bytes");
     }
     contenido = contenido.clone();
   }

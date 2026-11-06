@@ -105,7 +105,8 @@ public class ServidorTCP {
   }
 
   private void leer(Socket socket) {
-    try (DataInputStream entrada = new DataInputStream(new BufferedInputStream(socket.getInputStream()))) {
+    try (DataInputStream entrada = new DataInputStream(
+      new BufferedInputStream(socket.getInputStream()))) {
       while (this.activo && !socket.isClosed()) {
         int longitud = entrada.readInt();
         if (longitud <= 0 || longitud > LONGITUD_MAXIMA_MENSAJE) {
