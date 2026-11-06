@@ -1,0 +1,16 @@
+package juego.modelo;
+
+import java.util.List;
+
+public interface Modelo {
+
+  List<Jugador> obtenerJugadores();
+
+  List<Carta> obtenerCartasCantadas();
+
+  int obtenerNumeroCartasRestantes();
+
+  EstadoPartida obtenerEstadoPartida();
+
+  Mensaje obtenerMensaje();
+}
