@@ -1,6 +1,3 @@
-/juego/nbproject/private/
-/dominio/nbproject/private/
-/red/nbproject/private/
-/red-api/nbproject/private/
-/broker/nbproject/private/
-/juego/build/
+**/nbproject/private/
+**/build/
+**/dist/
