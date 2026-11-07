@@ -1,50 +1,50 @@
 package juego;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.io.IOException;
 import java.util.List;
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import juego.controlador.ControladorJuego;
 import juego.fachada.Fachada;
 import juego.fachada.FachadaJuego;
 import juego.modelo.Carta;
-import juego.modelo.EstadoPartida;
-import juego.modelo.Jugador;
 import juego.modelo.Mazo;
 import juego.modelo.ModeloJuego;
-import juego.motor.CantadorAutomatico;
+import juego.red.ConexionBroker;
 import juego.vista.VistaJuego;
 
 public class Main {
 
-  private static final int CARTAS_POR_JUGADOR = 16;
-  private static final long INTERVALO_CANTADO_MS = 1000;
+  private static final String HOST_POR_DEFECTO = "127.0.0.1";
+  private static final int PUERTO_POR_DEFECTO = 7000;
 
   public static void main(String[] args) {
-    SwingUtilities.invokeLater(Main::iniciarJuego);
+    String host = args.length > 0 ? args[0] : HOST_POR_DEFECTO;
+    int puerto = args.length > 1 ? Integer.parseInt(args[1]) : PUERTO_POR_DEFECTO;
+    SwingUtilities.invokeLater(() -> iniciarJuego(host, puerto));
   }
 
-  private static void iniciarJuego() {
-    List<Carta> cartas = Mazo.crearCartas();
-    Collections.shuffle(cartas);
-
+  private static void iniciarJuego(String host, int puerto) {
     Fachada fachada = new FachadaJuego();
+    List<Carta> cartas = Mazo.crearCartas();
     ModeloJuego modelo = new ModeloJuego(fachada, cartas);
     ControladorJuego controlador = new ControladorJuego(modelo);
     VistaJuego vista = new VistaJuego(modelo, controlador);
     modelo.agregarObservador(vista);
 
-    modelo.agregarJugador(crearJugador("Jugador 1", "jugador1.png", cartas));
-    modelo.agregarJugador(crearJugador("Jugador 2", "jugador2.png", cartas));
-    modelo.establecerEstadoPartida(EstadoPartida.EN_CURSO);
+    ConexionBroker conexion;
+    try {
+      conexion = new ConexionBroker(host, puerto, modelo);
+    } catch (IOException e) {
+      JOptionPane.showMessageDialog(null,
+        "No se pudo conectar con el broker " + host + ":" + puerto
+          + "\n" + e.getMessage(),
+        "Conexion fallida", JOptionPane.ERROR_MESSAGE);
+      return;
+    }
 
+    modelo.establecerPublicador(conexion);
+    Runtime.getRuntime().addShutdownHook(new Thread(conexion::close, "cierre-juego"));
     vista.setVisible(true);
-    new CantadorAutomatico(modelo, INTERVALO_CANTADO_MS).iniciar();
-  }
-
-  private static Jugador crearJugador(String nombre, String imagen, List<Carta> cartas) {
-    List<Carta> cartasJugador = new ArrayList<>(cartas);
-    Collections.shuffle(cartasJugador);
-    return new Jugador(nombre, imagen, cartasJugador.subList(0, CARTAS_POR_JUGADOR));
   }
 }

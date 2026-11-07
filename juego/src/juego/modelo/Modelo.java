@@ -13,4 +13,8 @@ public interface Modelo {
   EstadoPartida obtenerEstadoPartida();
 
   Mensaje obtenerMensaje();
+
+  long obtenerVersionMensaje();
+
+  boolean estaDesconectado();
 }

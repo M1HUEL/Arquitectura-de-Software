@@ -35,6 +35,12 @@ public class Partida {
     }
   }
 
+  public void finalizar() {
+    if (estadoPartida == EstadoPartida.EN_CURSO) {
+      estadoPartida = EstadoPartida.TERMINADA;
+    }
+  }
+
   public void cantarSiguienteCarta() {
     if (estadoPartida != EstadoPartida.EN_CURSO) {
       return;

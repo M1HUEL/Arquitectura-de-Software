@@ -1,45 +1,145 @@
 package juego.modelo;
 
+import comun.MensajesJuego;
+import comun.MensajesJuego.EstadoPartidaJuego;
+import comun.MensajesJuego.EventoPartida;
+import comun.MensajesJuego.JugadorEstado;
+import comun.MensajesJuego.MovimientoProcesado;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import juego.fachada.Fachada;
 import juego.observador.Observador;
 
 public class ModeloJuego implements Modelo {
 
   private final Fachada fachada;
-  private final List<Observador> observadores = new ArrayList<>();
-  private final List<Jugador> jugadores = new ArrayList<>();
-  private final List<Carta> cartas;
-  private final List<Carta> cartasCantadas = new ArrayList<>();
-  private int numeroCartasRestantes;
-  private Patron patron;
-  private EstadoPartida estadoPartida = EstadoPartida.NO_INICIADA;
-  private Mensaje mensaje;
+  private final Map<String, Carta> catalogo = new LinkedHashMap<>();
+  private final List<Observador> observadores = new CopyOnWriteArrayList<>();
+  private volatile PublicadorMovimiento publicador;
+  private volatile List<Jugador> jugadores = List.of();
+  private volatile List<Carta> cartasCantadas = List.of();
+  private volatile int numeroCartasRestantes;
+  private volatile Patron patron;
+  private volatile EstadoPartida estadoPartida = EstadoPartida.NO_INICIADA;
+  private volatile Mensaje mensaje;
+  private volatile long versionMensaje;
+  private volatile String ganador = "";
+  private volatile String ultimoEvento = "";
+  private volatile boolean desconectado;
 
   public ModeloJuego(Fachada fachada, List<Carta> cartas) {
+    if (fachada == null) {
+      throw new IllegalArgumentException("La fachada no puede ser nula");
+    }
+    if (cartas == null) {
+      throw new IllegalArgumentException("Las cartas no pueden ser nulas");
+    }
     this.fachada = fachada;
-    this.cartas = new ArrayList<>(cartas);
-    this.numeroCartasRestantes = this.cartas.size();
+    for (Carta carta : cartas) {
+      this.catalogo.put(carta.obtenerNombre(), carta);
+    }
+    this.numeroCartasRestantes = this.catalogo.size();
+  }
+
+  public void establecerPublicador(PublicadorMovimiento publicador) {
+    this.publicador = publicador;
   }
 
   public void seleccionarCasilla(Carta carta, Jugador jugador) {
+    String nombre = carta == null ? "" : carta.obtenerNombre();
+    if (enviarMovimiento(jugador, MensajesJuego.CASILLA, nombre, null)) {
+      return;
+    }
     boolean valida = fachada.validarCasilla(carta, jugador);
     notificarObservadores(valida ? Mensaje.CASILLA_VALIDA : Mensaje.CASILLA_INVALIDA);
   }
 
   public void seleccionarPatron(Jugador jugador, Patron patron) {
+    if (enviarMovimiento(jugador, MensajesJuego.PATRON, "", patron)) {
+      return;
+    }
     boolean valido = fachada.validarPatron(jugador, cartasCantadas, patron);
     notificarObservadores(valido ? Mensaje.PATRON_VALIDO : Mensaje.PATRON_INVALIDO);
   }
 
   public void seleccionarVictoria(Jugador jugador, Patron patron) {
+    if (enviarMovimiento(jugador, MensajesJuego.VICTORIA, "", patron)) {
+      return;
+    }
     boolean valida = fachada.validarVictoria(jugador, cartasCantadas, patron);
     notificarObservadores(valida ? Mensaje.VICTORIA_VALIDA : Mensaje.VICTORIA_INVALIDA);
   }
 
+  public void aplicarEstado(EstadoPartidaJuego estado) {
+    if (estado == null) {
+      return;
+    }
+    List<Jugador> nuevosJugadores = new ArrayList<>();
+    for (JugadorEstado jugadorEstado : estado.jugadores()) {
+      List<Carta> cartasJugador = new ArrayList<>();
+      for (String nombre : jugadorEstado.cartas()) {
+        cartasJugador.add(convertirCarta(nombre));
+      }
+      Jugador jugador = new Jugador(jugadorEstado.nombre(), jugadorEstado.imagen(),
+        cartasJugador);
+      jugador.agregarPuntos(jugadorEstado.puntaje());
+      nuevosJugadores.add(jugador);
+    }
+
+    List<Carta> nuevasCantadas = new ArrayList<>();
+    for (String nombre : estado.cartasCantadas()) {
+      nuevasCantadas.add(convertirCarta(nombre));
+    }
+
+    this.jugadores = List.copyOf(nuevosJugadores);
+    this.cartasCantadas = List.copyOf(nuevasCantadas);
+    this.numeroCartasRestantes = estado.cartasRestantes();
+    this.patron = leerPatron(estado.patron());
+    this.estadoPartida = leerEstado(estado.estado());
+    this.ganador = estado.ganador();
+    notificarObservadores();
+  }
+
+  public void aplicarEvento(EventoPartida evento) {
+    if (evento == null) {
+      return;
+    }
+    this.ultimoEvento = evento.tipo();
+    notificarObservadores();
+  }
+
+  public void aplicarMovimientoProcesado(MovimientoProcesado movimiento) {
+    if (movimiento == null) {
+      return;
+    }
+    Mensaje resultado = null;
+    switch (movimiento.tipo()) {
+      case MensajesJuego.CASILLA ->
+        resultado = movimiento.valido() ? Mensaje.CASILLA_VALIDA : Mensaje.CASILLA_INVALIDA;
+      case MensajesJuego.PATRON ->
+        resultado = movimiento.valido() ? Mensaje.PATRON_VALIDO : Mensaje.PATRON_INVALIDO;
+      case MensajesJuego.VICTORIA ->
+        resultado = movimiento.valido() ? Mensaje.VICTORIA_VALIDA : Mensaje.VICTORIA_INVALIDA;
+      default -> {
+        return;
+      }
+    }
+    notificarObservadores(resultado);
+  }
+
+  public void registrarDesconexion(Throwable causa) {
+    this.desconectado = true;
+    notificarObservadores();
+  }
+
   public void agregarObservador(Observador observador) {
-    observadores.add(observador);
+    if (observador != null) {
+      observadores.add(observador);
+    }
   }
 
   public void eliminarObservador(Observador observador) {
@@ -47,13 +147,52 @@ public class ModeloJuego implements Modelo {
   }
 
   public void notificarObservadores() {
-    notificarObservadores(null);
+    for (Observador observador : observadores) {
+      observador.actualizar(this);
+    }
   }
 
   private void notificarObservadores(Mensaje mensaje) {
     this.mensaje = mensaje;
-    for (Observador observador : observadores) {
-      observador.actualizar(this);
+    this.versionMensaje++;
+    notificarObservadores();
+  }
+
+  private boolean enviarMovimiento(Jugador jugador, String tipo, String carta, Patron patron) {
+    PublicadorMovimiento actual = this.publicador;
+    if (actual == null || this.desconectado || jugador == null) {
+      return false;
+    }
+    try {
+      actual.publicar(jugador.obtenerNombre(), tipo, carta, patron);
+      return true;
+    } catch (IOException e) {
+      registrarDesconexion(e);
+      return false;
+    }
+  }
+
+  private Carta convertirCarta(String nombre) {
+    Carta carta = catalogo.get(nombre);
+    return carta != null ? carta : new Carta(nombre, "");
+  }
+
+  private Patron leerPatron(String valor) {
+    if (valor == null || valor.isBlank()) {
+      return null;
+    }
+    try {
+      return Patron.valueOf(valor);
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
+  }
+
+  private EstadoPartida leerEstado(String valor) {
+    try {
+      return EstadoPartida.valueOf(valor);
+    } catch (IllegalArgumentException | NullPointerException e) {
+      return EstadoPartida.NO_INICIADA;
     }
   }
 
@@ -63,16 +202,21 @@ public class ModeloJuego implements Modelo {
   }
 
   @Override
+  public long obtenerVersionMensaje() {
+    return versionMensaje;
+  }
+
+  @Override
   public List<Jugador> obtenerJugadores() {
     return jugadores;
   }
 
   public List<Carta> obtenerCartas() {
-    return cartas;
+    return List.copyOf(catalogo.values());
   }
 
   public int obtenerNumeroCartas() {
-    return cartas.size();
+    return catalogo.size();
   }
 
   @Override
@@ -93,55 +237,21 @@ public class ModeloJuego implements Modelo {
     return patron;
   }
 
+  public String obtenerGanador() {
+    return ganador;
+  }
+
+  public String obtenerUltimoEvento() {
+    return ultimoEvento;
+  }
+
   @Override
   public EstadoPartida obtenerEstadoPartida() {
     return estadoPartida;
   }
 
-  public void cantarSiguienteCarta() {
-    Carta carta = buscarSiguienteCarta();
-    if (carta == null) {
-      return;
-    }
-    if (!fachada.validarCantar(carta, cartas, cartasCantadas)) {
-      return;
-    }
-    cartasCantadas.add(carta);
-    numeroCartasRestantes--;
-    if (numeroCartasRestantes == 0) {
-      estadoPartida = EstadoPartida.TERMINADA;
-    }
-    notificarObservadores();
-  }
-
-  private Carta buscarSiguienteCarta() {
-    for (Carta carta : cartas) {
-      boolean yaCantada = false;
-      for (Carta cartaCantada : cartasCantadas) {
-        if (cartaCantada.obtenerNombre().equals(carta.obtenerNombre())) {
-          yaCantada = true;
-          break;
-        }
-      }
-      if (!yaCantada) {
-        return carta;
-      }
-    }
-    return null;
-  }
-
-  public void agregarJugador(Jugador jugador) {
-    jugadores.add(jugador);
-    notificarObservadores();
-  }
-
-  public void establecerPatron(Patron patron) {
-    this.patron = patron;
-    notificarObservadores();
-  }
-
-  public void establecerEstadoPartida(EstadoPartida estadoPartida) {
-    this.estadoPartida = estadoPartida;
-    notificarObservadores();
+  @Override
+  public boolean estaDesconectado() {
+    return desconectado;
   }
 }

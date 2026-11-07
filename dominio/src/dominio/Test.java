@@ -1,77 +1,165 @@
 package dominio;
 
-import comun.Mensaje;
-import comun.Serializador;
+import broker.Broker;
+import broker.cliente.ClienteBroker;
+import comun.MensajesJuego;
+import comun.MensajesJuego.EstadoPartidaJuego;
+import comun.MensajesJuego.EventoPartida;
+import comun.MensajesJuego.Movimiento;
+import comun.MensajesJuego.MovimientoProcesado;
+import comun.Protocolo;
 import comun.Tipos;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import red.ClienteTCP;
-import red.Dispatcher;
-import red.Receptor;
-import red.api.IDispatcher;
-import red.api.IReceptorExterno;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
-public class Test implements IReceptorExterno {
+public class Test {
 
-  private final IDispatcher dispatcher;
-  private final String hostJuego;
-  private final int puertoJuego;
-
-  public Test(IDispatcher dispatcher, String hostJuego, int puertoJuego) {
-    this.dispatcher = dispatcher;
-    this.hostJuego = hostJuego;
-    this.puertoJuego = puertoJuego;
-  }
+  private static final String HOST = "127.0.0.1";
+  private static final long ESPERA_SEGUNDOS = 3;
+  private static final long INTERVALO_LARGO_MS = 60_000;
 
   public static void main(String[] args) throws Exception {
-    int puertoEscucha = args.length > 0 ? Integer.parseInt(args[0]) : 5000;
-    String hostJuego = args.length > 1 ? args[1] : "127.0.0.1";
-    int puertoJuego = args.length > 2 ? Integer.parseInt(args[2]) : 5001;
+    Broker broker = new Broker();
+    broker.iniciar(0);
+    int puerto = broker.obtenerPuerto();
 
-    IDispatcher dispatcher = new Dispatcher(new ClienteTCP());
-    Test dominio = new Test(dispatcher, hostJuego, puertoJuego);
-    Receptor receptor = new Receptor(dominio);
-    receptor.iniciar(puertoEscucha);
-    System.out.println("Dominio: escuchando en el puerto " + puertoEscucha);
+    Partida partida = crearPartida();
+    ServicioDominio servicio = new ServicioDominio(partida, HOST, puerto, INTERVALO_LARGO_MS);
+    servicio.iniciar();
 
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      receptor.detener();
-      dispatcher.detener();
-    }, "cierre-dominio"));
+    try {
+      Observador observador = new Observador();
+      try (ClienteBroker cliente = new ClienteBroker(HOST, puerto, observador)) {
+        cliente.suscribir(Tipos.TEMA_PARTIDA_ESTADO);
+        cliente.suscribir(Tipos.TEMA_PARTIDA_EVENTO);
+        cliente.suscribir(Tipos.TEMA_MOVIMIENTO_PROCESADO);
+        cliente.publicar(Tipos.TEMA_SINCRONIZAR, new byte[0]);
 
-    new CountDownLatch(1).await();
-  }
-
-  public void enviarMensaje(String jugador, int x, int y) {
-    System.out.println("Dominio: enviando confirmación de movimiento de "
-      + jugador + " a (" + x + ", " + y + ")");
-    byte[] contenido = Serializador.serializar(salida -> {
-      salida.writeUTF(jugador);
-      salida.writeInt(x);
-      salida.writeInt(y);
-    });
-    Mensaje mensaje = new Mensaje(Tipos.MOVIMIENTO_PROCESADO, contenido);
-    dispatcher.enviar(hostJuego, puertoJuego, mensaje.aBytes());
-  }
-
-  @Override
-  public void alRecibir(byte[] datos) {
-    Mensaje mensaje = Mensaje.desdeBytes(datos);
-    if (!Tipos.MOVIMIENTO.equals(mensaje.tipo())) {
-      return;
+        verificarEstadoInicial(esperarEstado(observador));
+        verificarMovimientos(cliente, observador);
+        verificarVictoria(cliente, observador);
+      }
+    } finally {
+      servicio.close();
+      broker.detener();
     }
-    try (DataInputStream entrada = new DataInputStream(
-      new ByteArrayInputStream(mensaje.contenido()))) {
-      String jugador = entrada.readUTF();
-      int x = entrada.readInt();
-      int y = entrada.readInt();
-      System.out.println("Dominio: movimiento recibido de "
-        + jugador + " a (" + x + ", " + y + ")");
-      enviarMensaje(jugador, x, y);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Contenido inválido", e);
+
+    System.out.println("Integración dominio-broker OK");
+  }
+
+  private static Partida crearPartida() {
+    Mazo mazo = new Mazo();
+    List<Carta> cartas = mazo.obtenerCartas();
+    Partida partida = new Partida(mazo);
+    partida.agregarJugador(new Jugador(
+      "Jugador 1", "jugador1.png", cartas.subList(0, 16)));
+    partida.agregarJugador(new Jugador(
+      "Jugador 2", "jugador2.png", cartas.subList(16, 32)));
+    partida.establecerPatron(Patron.LINEA);
+    partida.iniciar();
+    for (int i = 0; i < 4; i++) {
+      partida.cantarSiguienteCarta();
+    }
+    return partida;
+  }
+
+  private static void verificarEstadoInicial(EstadoPartidaJuego estado) {
+    verificar("EN_CURSO".equals(estado.estado()), "Estado inicial incorrecto");
+    verificar(estado.jugadores().size() == 2, "Número de jugadores incorrecto");
+    verificar(estado.cartasCantadas().size() == 4, "Cartas cantadas iniciales incorrectas");
+    verificar(estado.cartasCantadas().contains("El gallo"), "Falta El gallo");
+    verificar(estado.cartasRestantes() == 50, "Cartas restantes iniciales incorrectas");
+  }
+
+  private static void verificarMovimientos(ClienteBroker cliente, Observador observador)
+      throws Exception {
+    enviar(cliente, new Movimiento(
+      "Jugador 1", MensajesJuego.CASILLA, "El gallo", ""));
+    MovimientoProcesado valido = esperarMovimiento(observador);
+    verificar(valido.valido(), "La casilla válida fue rechazada");
+    verificar("Casilla válida".equals(valido.detalle()), "Detalle de casilla válida incorrecto");
+
+    enviar(cliente, new Movimiento(
+      "Jugador 1", MensajesJuego.CASILLA, "La sirena", ""));
+    MovimientoProcesado noCantada = esperarMovimiento(observador);
+    verificar(!noCantada.valido(), "Se aceptó una carta no cantada");
+
+    enviar(cliente, new Movimiento(
+      "Jugador 1", MensajesJuego.PATRON, "", "LINEA"));
+    MovimientoProcesado patron = esperarMovimiento(observador);
+    verificar(patron.valido(), "El patrón LINEA debía ser válido");
+
+    enviar(cliente, new Movimiento(
+      "Nadie", MensajesJuego.CASILLA, "El gallo", ""));
+    MovimientoProcesado desconocido = esperarMovimiento(observador);
+    verificar(!desconocido.valido(), "Se aceptó un jugador desconocido");
+    verificar("Jugador desconocido".equals(desconocido.detalle()),
+      "Detalle de jugador desconocido incorrecto");
+  }
+
+  private static void verificarVictoria(ClienteBroker cliente, Observador observador)
+      throws Exception {
+    enviar(cliente, new Movimiento(
+      "Jugador 1", MensajesJuego.VICTORIA, "", "LINEA"));
+
+    MovimientoProcesado victoria = esperarMovimiento(observador);
+    verificar(victoria.valido(), "La victoria debía ser válida");
+
+    EventoPartida evento = observador.eventos.poll(ESPERA_SEGUNDOS, TimeUnit.SECONDS);
+    verificar(evento != null, "No llegó el evento de fin de partida");
+    verificar(MensajesJuego.PARTIDA_TERMINADA.equals(evento.tipo()),
+      "Tipo de evento de fin incorrecto");
+
+    EstadoPartidaJuego estado = esperarEstado(observador);
+    verificar("TERMINADA".equals(estado.estado()), "La partida no terminó");
+    verificar("Jugador 1".equals(estado.ganador()), "Ganador incorrecto");
+  }
+
+  private static void enviar(ClienteBroker cliente, Movimiento movimiento) throws Exception {
+    cliente.publicar(Tipos.TEMA_MOVIMIENTO, MensajesJuego.movimiento(movimiento));
+  }
+
+  private static EstadoPartidaJuego esperarEstado(Observador observador)
+      throws InterruptedException {
+    EstadoPartidaJuego estado = observador.estados.poll(ESPERA_SEGUNDOS, TimeUnit.SECONDS);
+    verificar(estado != null, "No llegó el estado de la partida");
+    return estado;
+  }
+
+  private static MovimientoProcesado esperarMovimiento(Observador observador)
+      throws InterruptedException {
+    MovimientoProcesado movimiento = observador.movimientos.poll(
+      ESPERA_SEGUNDOS, TimeUnit.SECONDS);
+    verificar(movimiento != null, "No llegó la respuesta del movimiento");
+    return movimiento;
+  }
+
+  private static void verificar(boolean condicion, String mensaje) {
+    if (!condicion) {
+      throw new AssertionError(mensaje);
+    }
+  }
+
+  private static final class Observador implements ClienteBroker.Observador {
+
+    private final BlockingQueue<EstadoPartidaJuego> estados = new LinkedBlockingQueue<>();
+    private final BlockingQueue<MovimientoProcesado> movimientos = new LinkedBlockingQueue<>();
+    private final BlockingQueue<EventoPartida> eventos = new LinkedBlockingQueue<>();
+
+    @Override
+    public void alRecibirPublicacion(Protocolo.Publicacion publicacion) {
+      switch (publicacion.tema()) {
+        case Tipos.TEMA_PARTIDA_ESTADO -> this.estados.add(
+          MensajesJuego.leerEstado(publicacion.contenido()));
+        case Tipos.TEMA_MOVIMIENTO_PROCESADO -> this.movimientos.add(
+          MensajesJuego.leerMovimientoProcesado(publicacion.contenido()));
+        case Tipos.TEMA_PARTIDA_EVENTO -> this.eventos.add(
+          MensajesJuego.leerEvento(publicacion.contenido()));
+        default -> {
+        }
+      }
     }
   }
 }

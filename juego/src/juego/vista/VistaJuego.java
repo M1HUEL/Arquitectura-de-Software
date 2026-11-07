@@ -35,6 +35,8 @@ public class VistaJuego extends JFrame implements Observador {
   private final DefaultListModel<String> modeloListaJugadores;
   private final JList<String> listaJugadores;
   private Patron patronSeleccionado = Patron.LINEA;
+  private boolean avisoDesconexionMostrado;
+  private long versionMensajeMostrado = -1;
 
   public VistaJuego(Modelo modelo, ControladorJuego controlador) {
     this.modelo = modelo;
@@ -144,6 +146,13 @@ public class VistaJuego extends JFrame implements Observador {
       "Cartas restantes: " + this.modelo.obtenerNumeroCartasRestantes());
     etiquetaEstado.setText("Estado: " + this.modelo.obtenerEstadoPartida());
 
+    if (this.modelo.estaDesconectado() && !avisoDesconexionMostrado) {
+      avisoDesconexionMostrado = true;
+      JOptionPane.showMessageDialog(this,
+        "Se perdio la conexion con el broker. La partida ya no se actualizara.",
+        "Conexion perdida", JOptionPane.WARNING_MESSAGE);
+    }
+
     int seleccion = listaJugadores.getSelectedIndex();
     modeloListaJugadores.clear();
     for (Jugador jugador : this.modelo.obtenerJugadores()) {
@@ -183,8 +192,13 @@ public class VistaJuego extends JFrame implements Observador {
     panelTableros.revalidate();
     panelTableros.repaint();
 
-    Mensaje mensaje = this.modelo.obtenerMensaje();
-    if (mensaje != null) {
+    long version = this.modelo.obtenerVersionMensaje();
+    if (version != versionMensajeMostrado) {
+      versionMensajeMostrado = version;
+      Mensaje mensaje = this.modelo.obtenerMensaje();
+      if (mensaje == null) {
+        return;
+      }
       switch (mensaje) {
         case CASILLA_VALIDA:
           mostrarMensajeCasillaValida();
