@@ -3,6 +3,7 @@ package juego.vista;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
@@ -16,6 +17,7 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import juego.controlador.ControladorJuego;
 import juego.modelo.Carta;
+import juego.modelo.EstadoPartida;
 import juego.modelo.Jugador;
 import juego.modelo.Mensaje;
 import juego.modelo.Modelo;
@@ -31,6 +33,7 @@ public class VistaJuego extends JFrame implements Observador {
   private final JLabel etiquetaCartaCantada;
   private final JLabel etiquetaCartasRestantes;
   private final JLabel etiquetaEstado;
+  private final JLabel etiquetaJugadorLocal;
   private final JPanel panelTableros;
   private final DefaultListModel<String> modeloListaJugadores;
   private final JList<String> listaJugadores;
@@ -42,16 +45,18 @@ public class VistaJuego extends JFrame implements Observador {
     this.modelo = modelo;
     this.controlador = controlador;
 
-    setTitle("Loteria");
+    setTitle("Loteria - " + modelo.obtenerJugadorLocal());
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     setSize(1200, 700);
 
     etiquetaCartaCantada = new JLabel();
     etiquetaCartasRestantes = new JLabel();
     etiquetaEstado = new JLabel();
+    etiquetaJugadorLocal = new JLabel("Jugador: " + modelo.obtenerJugadorLocal());
 
     modeloListaJugadores = new DefaultListModel<>();
     listaJugadores = new JList<>(modeloListaJugadores);
+    listaJugadores.setEnabled(false);
 
     panelTableros = new JPanel(new GridLayout(0, 1, 0, 8));
 
@@ -60,24 +65,20 @@ public class VistaJuego extends JFrame implements Observador {
       JButton botonPatron = new JButton(patron.name());
       botonPatron.addActionListener(evento -> {
         patronSeleccionado = patron;
-        int indice = listaJugadores.getSelectedIndex();
-        if (indice < 0 || indice >= this.modelo.obtenerJugadores().size()) {
-          return;
+        Jugador local = buscarJugadorLocal();
+        if (local != null) {
+          seleccionarPatron(local, patron);
         }
-        Jugador jugador = this.modelo.obtenerJugadores().get(indice);
-        seleccionarPatron(jugador, patron);
       });
       panelPatrones.add(botonPatron);
     }
 
     JButton botonCantarVictoria = new JButton("Cantar Victoria");
     botonCantarVictoria.addActionListener(evento -> {
-      int indice = listaJugadores.getSelectedIndex();
-      if (indice < 0 || indice >= this.modelo.obtenerJugadores().size()) {
-        return;
+      Jugador local = buscarJugadorLocal();
+      if (local != null) {
+        seleccionarVictoria(local, patronSeleccionado);
       }
-      Jugador jugador = this.modelo.obtenerJugadores().get(indice);
-      seleccionarVictoria(jugador, patronSeleccionado);
     });
 
     JButton botonSalir = new JButton("Salir de la partida");
@@ -86,8 +87,9 @@ public class VistaJuego extends JFrame implements Observador {
       System.exit(0);
     });
 
-    JPanel seccionInformacion = new JPanel(new GridLayout(3, 1));
+    JPanel seccionInformacion = new JPanel(new GridLayout(4, 1));
     seccionInformacion.setBorder(BorderFactory.createTitledBorder("Informacion"));
+    seccionInformacion.add(etiquetaJugadorLocal);
     seccionInformacion.add(etiquetaCartaCantada);
     seccionInformacion.add(etiquetaCartasRestantes);
     seccionInformacion.add(etiquetaEstado);
@@ -146,6 +148,15 @@ public class VistaJuego extends JFrame implements Observador {
       "Cartas restantes: " + this.modelo.obtenerNumeroCartasRestantes());
     etiquetaEstado.setText("Estado: " + this.modelo.obtenerEstadoPartida());
 
+    List<Jugador> jugadores = ordenarJugadores();
+    Jugador local = buscarJugadorLocal(jugadores);
+    if (local == null) {
+      etiquetaJugadorLocal.setText(
+        "Jugador: " + this.modelo.obtenerJugadorLocal() + " (no encontrado)");
+    } else {
+      etiquetaJugadorLocal.setText("Jugador: " + local.obtenerNombre());
+    }
+
     if (this.modelo.estaDesconectado() && !avisoDesconexionMostrado) {
       avisoDesconexionMostrado = true;
       JOptionPane.showMessageDialog(this,
@@ -153,36 +164,37 @@ public class VistaJuego extends JFrame implements Observador {
         "Conexion perdida", JOptionPane.WARNING_MESSAGE);
     }
 
-    int seleccion = listaJugadores.getSelectedIndex();
     modeloListaJugadores.clear();
-    for (Jugador jugador : this.modelo.obtenerJugadores()) {
+    for (Jugador jugador : jugadores) {
+      boolean esLocal = local != null
+        && jugador.obtenerNombre().equals(local.obtenerNombre());
+      String marca = esLocal ? " (tu)" : "";
       modeloListaJugadores.addElement(
-        jugador.obtenerNombre() + " - Puntaje: " + jugador.obtenerPuntaje());
-    }
-    if (!modeloListaJugadores.isEmpty()) {
-      if (seleccion < 0 || seleccion >= modeloListaJugadores.size()) {
-        seleccion = 0;
-      }
-      listaJugadores.setSelectedIndex(seleccion);
+        jugador.obtenerNombre() + marca + " - Puntaje: " + jugador.obtenerPuntaje());
     }
 
+    boolean puedeJugar = !this.modelo.estaDesconectado()
+      && this.modelo.obtenerEstadoPartida() == EstadoPartida.EN_CURSO;
     panelTableros.removeAll();
-    for (Jugador jugador : this.modelo.obtenerJugadores()) {
+    for (Jugador jugador : jugadores) {
+      boolean esLocal = local != null
+        && jugador.obtenerNombre().equals(local.obtenerNombre());
       JPanel panelJugador = new JPanel(new BorderLayout());
-      panelJugador.setBorder(BorderFactory.createTitledBorder(jugador.obtenerNombre()));
+      panelJugador.setBorder(BorderFactory.createTitledBorder(
+        esLocal ? jugador.obtenerNombre() + " (tu tablero)" : jugador.obtenerNombre()));
 
       JPanel tablero = new JPanel(new GridLayout(COLUMNAS_TABLERO, COLUMNAS_TABLERO));
       for (Carta carta : jugador.obtenerCartas()) {
-        boolean marcada = false;
-        for (Carta cantada : cantadas) {
-          if (cantada.obtenerNombre().equals(carta.obtenerNombre())) {
-            marcada = true;
-            break;
-          }
-        }
+        boolean marcada = jugador.estaSeleccionada(carta);
         JButton casilla = new JButton(
           marcada ? "[" + carta.obtenerNombre() + "]" : carta.obtenerNombre());
-        casilla.addActionListener(evento -> seleccionarCasilla(carta, jugador));
+        boolean interactivo = esLocal && puedeJugar;
+        casilla.setEnabled(interactivo);
+        if (interactivo) {
+          casilla.addActionListener(evento -> seleccionarCasilla(carta, jugador));
+        } else if (!esLocal) {
+          casilla.setToolTipText("Tablero de otro jugador: solo lectura");
+        }
         tablero.add(casilla);
       }
 
@@ -220,6 +232,29 @@ public class VistaJuego extends JFrame implements Observador {
           break;
       }
     }
+  }
+
+  private List<Jugador> ordenarJugadores() {
+    List<Jugador> jugadores = new ArrayList<>(this.modelo.obtenerJugadores());
+    String nombreLocal = this.modelo.obtenerJugadorLocal();
+    jugadores.sort((uno, otro) -> Boolean.compare(
+      !uno.obtenerNombre().equals(nombreLocal),
+      !otro.obtenerNombre().equals(nombreLocal)));
+    return jugadores;
+  }
+
+  private Jugador buscarJugadorLocal() {
+    return buscarJugadorLocal(this.modelo.obtenerJugadores());
+  }
+
+  private Jugador buscarJugadorLocal(List<Jugador> jugadores) {
+    String nombreLocal = this.modelo.obtenerJugadorLocal();
+    for (Jugador jugador : jugadores) {
+      if (jugador.obtenerNombre().equals(nombreLocal)) {
+        return jugador;
+      }
+    }
+    return null;
   }
 
   public void mostrarMensajeCasillaValida() {

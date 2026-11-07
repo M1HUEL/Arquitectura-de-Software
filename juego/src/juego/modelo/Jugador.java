@@ -1,7 +1,9 @@
 package juego.modelo;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Jugador {
 
@@ -9,6 +11,7 @@ public class Jugador {
   private final String imagen;
   private int puntaje;
   private final List<Carta> cartas;
+  private final Set<Carta> casillasSeleccionadas = new LinkedHashSet<>();
 
   public Jugador(String nombre, String imagen, List<Carta> cartas) {
     this.nombre = nombre;
@@ -31,6 +34,21 @@ public class Jugador {
 
   public List<Carta> obtenerCartas() {
     return cartas;
+  }
+
+  public boolean marcarCasilla(Carta carta) {
+    if (carta == null || !cartas.contains(carta)) {
+      return false;
+    }
+    return casillasSeleccionadas.add(carta);
+  }
+
+  public boolean estaSeleccionada(Carta carta) {
+    return casillasSeleccionadas.contains(carta);
+  }
+
+  public List<Carta> obtenerCasillasSeleccionadas() {
+    return new ArrayList<>(casillasSeleccionadas);
   }
 
   public void agregarPuntos(int puntos) {

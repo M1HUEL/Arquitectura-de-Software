@@ -86,6 +86,10 @@ public final class MensajesJuego {
         for (String carta : jugador.cartas()) {
           salida.writeUTF(carta);
         }
+        salida.writeInt(jugador.seleccionadas().size());
+        for (String carta : jugador.seleccionadas()) {
+          salida.writeUTF(carta);
+        }
       }
       salida.writeInt(estado.cartasCantadas().size());
       for (String carta : estado.cartasCantadas()) {
@@ -112,7 +116,12 @@ public final class MensajesJuego {
         for (int j = 0; j < totalCartas; j++) {
           cartas.add(entrada.readUTF());
         }
-        jugadores.add(new JugadorEstado(nombre, imagen, puntaje, cartas));
+        int totalSeleccionadas = leerTamano(entrada, MAX_CARTAS);
+        List<String> seleccionadas = new ArrayList<>();
+        for (int j = 0; j < totalSeleccionadas; j++) {
+          seleccionadas.add(entrada.readUTF());
+        }
+        jugadores.add(new JugadorEstado(nombre, imagen, puntaje, cartas, seleccionadas));
       }
       int totalCantadas = leerTamano(entrada, MAX_CANTADAS);
       List<String> cartasCantadas = new ArrayList<>();
@@ -213,7 +222,8 @@ public final class MensajesJuego {
     }
   }
 
-  public record JugadorEstado(String nombre, String imagen, int puntaje, List<String> cartas) {
+  public record JugadorEstado(String nombre, String imagen, int puntaje, List<String> cartas,
+      List<String> seleccionadas) {
 
     public JugadorEstado {
       nombre = textoRequerido(nombre, "nombre");
@@ -225,6 +235,15 @@ public final class MensajesJuego {
         throw new IllegalArgumentException("Las cartas no pueden ser nulas");
       }
       cartas = List.copyOf(cartas);
+      if (seleccionadas == null) {
+        throw new IllegalArgumentException("Las casillas seleccionadas no pueden ser nulas");
+      }
+      seleccionadas = List.copyOf(seleccionadas);
+      for (String carta : seleccionadas) {
+        if (!cartas.contains(carta)) {
+          throw new IllegalArgumentException("La casilla seleccionada no pertenece al tablero");
+        }
+      }
     }
   }
 

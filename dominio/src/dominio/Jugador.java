@@ -1,13 +1,17 @@
 package dominio;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public class Jugador {
 
   private final String nombre;
   private final String imagen;
   private final Tablero tablero;
+  private final Set<Carta> casillasSeleccionadas = new LinkedHashSet<>();
   private int puntaje;
 
   public Jugador(String nombre, String imagen, List<Carta> cartas) {
@@ -35,6 +39,17 @@ public class Jugador {
 
   public List<Carta> obtenerCartas() {
     return tablero.obtenerCasillas();
+  }
+
+  public boolean marcarCasilla(Carta carta) {
+    if (carta == null || !tablero.contiene(carta)) {
+      return false;
+    }
+    return casillasSeleccionadas.add(carta);
+  }
+
+  public List<Carta> obtenerCasillasSeleccionadas() {
+    return new ArrayList<>(casillasSeleccionadas);
   }
 
   public void agregarPuntos(int puntos) {

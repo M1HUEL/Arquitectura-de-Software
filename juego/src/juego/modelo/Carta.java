@@ -17,4 +17,21 @@ public class Carta {
   public String obtenerImagen() {
     return imagen;
   }
+
+  @Override
+  public boolean equals(Object objeto) {
+    if (this == objeto) {
+      return true;
+    }
+    if (!(objeto instanceof Carta)) {
+      return false;
+    }
+    Carta carta = (Carta) objeto;
+    return nombre.equals(carta.nombre);
+  }
+
+  @Override
+  public int hashCode() {
+    return nombre.hashCode();
+  }
 }

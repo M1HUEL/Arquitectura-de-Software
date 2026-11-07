@@ -15,6 +15,7 @@ import juego.observador.Observador;
 
 public class ModeloJuego implements Modelo {
 
+  private final String jugadorLocal;
   private final Map<String, Carta> catalogo = new LinkedHashMap<>();
   private final List<Observador> observadores = new CopyOnWriteArrayList<>();
   private volatile PublicadorMovimiento publicador;
@@ -29,10 +30,14 @@ public class ModeloJuego implements Modelo {
   private volatile String ultimoEvento = "";
   private volatile boolean desconectado;
 
-  public ModeloJuego(List<Carta> cartas) {
+  public ModeloJuego(String jugadorLocal, List<Carta> cartas) {
+    if (jugadorLocal == null || jugadorLocal.isBlank()) {
+      throw new IllegalArgumentException("El jugador local no puede estar vacío");
+    }
     if (cartas == null) {
       throw new IllegalArgumentException("Las cartas no pueden ser nulas");
     }
+    this.jugadorLocal = jugadorLocal;
     for (Carta carta : cartas) {
       this.catalogo.put(carta.obtenerNombre(), carta);
     }
@@ -69,6 +74,9 @@ public class ModeloJuego implements Modelo {
       Jugador jugador = new Jugador(jugadorEstado.nombre(), jugadorEstado.imagen(),
         cartasJugador);
       jugador.agregarPuntos(jugadorEstado.puntaje());
+      for (String nombre : jugadorEstado.seleccionadas()) {
+        jugador.marcarCasilla(convertirCarta(nombre));
+      }
       nuevosJugadores.add(jugador);
     }
 
@@ -110,7 +118,11 @@ public class ModeloJuego implements Modelo {
         return;
       }
     }
-    notificarObservadores(resultado);
+    if (movimiento.jugador().equals(jugadorLocal)) {
+      notificarObservadores(resultado);
+    } else {
+      notificarObservadores();
+    }
   }
 
   public void registrarDesconexion(Throwable causa) {
@@ -142,7 +154,8 @@ public class ModeloJuego implements Modelo {
 
   private void enviarMovimiento(Jugador jugador, String tipo, String carta, Patron patron) {
     PublicadorMovimiento actual = this.publicador;
-    if (actual == null || this.desconectado || jugador == null) {
+    if (actual == null || this.desconectado || jugador == null
+        || !jugador.obtenerNombre().equals(jugadorLocal)) {
       return;
     }
     try {
@@ -174,6 +187,11 @@ public class ModeloJuego implements Modelo {
     } catch (IllegalArgumentException | NullPointerException e) {
       return EstadoPartida.NO_INICIADA;
     }
+  }
+
+  @Override
+  public String obtenerJugadorLocal() {
+    return jugadorLocal;
   }
 
   @Override

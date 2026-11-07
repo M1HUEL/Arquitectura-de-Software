@@ -5,6 +5,7 @@ import broker.cliente.ClienteBroker;
 import comun.MensajesJuego;
 import comun.MensajesJuego.EstadoPartidaJuego;
 import comun.MensajesJuego.EventoPartida;
+import comun.MensajesJuego.JugadorEstado;
 import comun.MensajesJuego.Movimiento;
 import comun.MensajesJuego.MovimientoProcesado;
 import comun.Protocolo;
@@ -80,6 +81,13 @@ public class Test {
     MovimientoProcesado valido = esperarMovimiento(observador);
     verificar(valido.valido(), "La casilla válida fue rechazada");
     verificar("Casilla válida".equals(valido.detalle()), "Detalle de casilla válida incorrecto");
+
+    EstadoPartidaJuego trasCasilla = esperarEstado(observador);
+    JugadorEstado jugador1 = trasCasilla.jugadores().stream()
+      .filter(jugador -> jugador.nombre().equals("Jugador 1"))
+      .findFirst().orElseThrow();
+    verificar(jugador1.seleccionadas().contains("El gallo"),
+      "La casilla seleccionada no se publicó en el estado");
 
     enviar(cliente, new Movimiento(
       "Jugador 1", MensajesJuego.CASILLA, "La sirena", ""));

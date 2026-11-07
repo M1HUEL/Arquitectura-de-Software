@@ -113,6 +113,9 @@ public final class ServicioDominio implements AutoCloseable {
             detalle = "El jugador no tiene esa carta";
           } else if (!this.partida.obtenerCartasCantadas().contains(carta)) {
             detalle = "La carta todavía no ha sido cantada";
+          } else if (!jugador.marcarCasilla(carta)) {
+            valido = true;
+            detalle = "La casilla ya estaba seleccionada";
           } else {
             valido = true;
             detalle = "Casilla válida";
@@ -143,6 +146,10 @@ public final class ServicioDominio implements AutoCloseable {
     publicarMovimientoProcesado(new MovimientoProcesado(
       movimiento.jugador(), movimiento.tipo(), movimiento.carta(),
       movimiento.patron(), valido, detalle));
+
+    if (valido && MensajesJuego.CASILLA.equals(movimiento.tipo())) {
+      publicarEstado();
+    }
 
     if (valido && MensajesJuego.VICTORIA.equals(movimiento.tipo())) {
       this.ganador = movimiento.jugador();
@@ -202,8 +209,12 @@ public final class ServicioDominio implements AutoCloseable {
       for (Carta carta : jugador.obtenerCartas()) {
         cartas.add(carta.obtenerNombre());
       }
+      List<String> seleccionadas = new ArrayList<>();
+      for (Carta carta : jugador.obtenerCasillasSeleccionadas()) {
+        seleccionadas.add(carta.obtenerNombre());
+      }
       jugadores.add(new JugadorEstado(jugador.obtenerNombre(), jugador.obtenerImagen(),
-        jugador.obtenerPuntaje(), cartas));
+        jugador.obtenerPuntaje(), cartas, seleccionadas));
     }
 
     List<String> cartasCantadas = new ArrayList<>();

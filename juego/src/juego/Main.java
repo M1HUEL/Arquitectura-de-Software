@@ -15,16 +15,18 @@ public class Main {
 
   private static final String HOST_POR_DEFECTO = "127.0.0.1";
   private static final int PUERTO_POR_DEFECTO = 7000;
+  private static final String JUGADOR_POR_DEFECTO = "Jugador 1";
 
   public static void main(String[] args) {
     String host = args.length > 0 ? args[0] : HOST_POR_DEFECTO;
     int puerto = args.length > 1 ? Integer.parseInt(args[1]) : PUERTO_POR_DEFECTO;
-    SwingUtilities.invokeLater(() -> iniciarJuego(host, puerto));
+    String jugadorLocal = args.length > 2 ? args[2] : JUGADOR_POR_DEFECTO;
+    SwingUtilities.invokeLater(() -> iniciarJuego(host, puerto, jugadorLocal));
   }
 
-  private static void iniciarJuego(String host, int puerto) {
+  private static void iniciarJuego(String host, int puerto, String jugadorLocal) {
     List<Carta> cartas = Mazo.crearCartas();
-    ModeloJuego modelo = new ModeloJuego(cartas);
+    ModeloJuego modelo = new ModeloJuego(jugadorLocal, cartas);
     ControladorJuego controlador = new ControladorJuego(modelo);
     VistaJuego vista = new VistaJuego(modelo, controlador);
     modelo.agregarObservador(vista);
