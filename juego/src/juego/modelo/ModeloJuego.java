@@ -11,12 +11,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import juego.fachada.Fachada;
 import juego.observador.Observador;
 
 public class ModeloJuego implements Modelo {
 
-  private final Fachada fachada;
   private final Map<String, Carta> catalogo = new LinkedHashMap<>();
   private final List<Observador> observadores = new CopyOnWriteArrayList<>();
   private volatile PublicadorMovimiento publicador;
@@ -31,14 +29,10 @@ public class ModeloJuego implements Modelo {
   private volatile String ultimoEvento = "";
   private volatile boolean desconectado;
 
-  public ModeloJuego(Fachada fachada, List<Carta> cartas) {
-    if (fachada == null) {
-      throw new IllegalArgumentException("La fachada no puede ser nula");
-    }
+  public ModeloJuego(List<Carta> cartas) {
     if (cartas == null) {
       throw new IllegalArgumentException("Las cartas no pueden ser nulas");
     }
-    this.fachada = fachada;
     for (Carta carta : cartas) {
       this.catalogo.put(carta.obtenerNombre(), carta);
     }
@@ -51,27 +45,15 @@ public class ModeloJuego implements Modelo {
 
   public void seleccionarCasilla(Carta carta, Jugador jugador) {
     String nombre = carta == null ? "" : carta.obtenerNombre();
-    if (enviarMovimiento(jugador, MensajesJuego.CASILLA, nombre, null)) {
-      return;
-    }
-    boolean valida = fachada.validarCasilla(carta, jugador);
-    notificarObservadores(valida ? Mensaje.CASILLA_VALIDA : Mensaje.CASILLA_INVALIDA);
+    enviarMovimiento(jugador, MensajesJuego.CASILLA, nombre, null);
   }
 
   public void seleccionarPatron(Jugador jugador, Patron patron) {
-    if (enviarMovimiento(jugador, MensajesJuego.PATRON, "", patron)) {
-      return;
-    }
-    boolean valido = fachada.validarPatron(jugador, cartasCantadas, patron);
-    notificarObservadores(valido ? Mensaje.PATRON_VALIDO : Mensaje.PATRON_INVALIDO);
+    enviarMovimiento(jugador, MensajesJuego.PATRON, "", patron);
   }
 
   public void seleccionarVictoria(Jugador jugador, Patron patron) {
-    if (enviarMovimiento(jugador, MensajesJuego.VICTORIA, "", patron)) {
-      return;
-    }
-    boolean valida = fachada.validarVictoria(jugador, cartasCantadas, patron);
-    notificarObservadores(valida ? Mensaje.VICTORIA_VALIDA : Mensaje.VICTORIA_INVALIDA);
+    enviarMovimiento(jugador, MensajesJuego.VICTORIA, "", patron);
   }
 
   public void aplicarEstado(EstadoPartidaJuego estado) {
@@ -158,17 +140,15 @@ public class ModeloJuego implements Modelo {
     notificarObservadores();
   }
 
-  private boolean enviarMovimiento(Jugador jugador, String tipo, String carta, Patron patron) {
+  private void enviarMovimiento(Jugador jugador, String tipo, String carta, Patron patron) {
     PublicadorMovimiento actual = this.publicador;
     if (actual == null || this.desconectado || jugador == null) {
-      return false;
+      return;
     }
     try {
       actual.publicar(jugador.obtenerNombre(), tipo, carta, patron);
-      return true;
     } catch (IOException e) {
       registrarDesconexion(e);
-      return false;
     }
   }
 

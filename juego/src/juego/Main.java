@@ -5,8 +5,6 @@ import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import juego.controlador.ControladorJuego;
-import juego.fachada.Fachada;
-import juego.fachada.FachadaJuego;
 import juego.modelo.Carta;
 import juego.modelo.Mazo;
 import juego.modelo.ModeloJuego;
@@ -25,9 +23,8 @@ public class Main {
   }
 
   private static void iniciarJuego(String host, int puerto) {
-    Fachada fachada = new FachadaJuego();
     List<Carta> cartas = Mazo.crearCartas();
-    ModeloJuego modelo = new ModeloJuego(fachada, cartas);
+    ModeloJuego modelo = new ModeloJuego(cartas);
     ControladorJuego controlador = new ControladorJuego(modelo);
     VistaJuego vista = new VistaJuego(modelo, controlador);
     modelo.agregarObservador(vista);
