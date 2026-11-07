@@ -7,9 +7,12 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import red.api.IConexion;
+import red.api.IObservadorConexion;
 
 public class ServidorTCP {
 
@@ -17,6 +20,7 @@ public class ServidorTCP {
   private static final long ESPERA_REINTENTO_ACEPTAR_MS = 50;
 
   private final List<ObservadorReceptor> observadores = new CopyOnWriteArrayList<>();
+  private final List<IObservadorConexion> observadoresConexion = new CopyOnWriteArrayList<>();
   private final Set<Socket> clientes = ConcurrentHashMap.newKeySet();
   private volatile ServerSocket serverSocket;
   private volatile Thread hilo;
@@ -32,6 +36,15 @@ public class ServidorTCP {
 
   public void quitarObservador(ObservadorReceptor observador) {
     this.observadores.remove(observador);
+  }
+
+  public void agregarObservadorConexion(IObservadorConexion observador) {
+    this.observadoresConexion.add(Objects.requireNonNull(
+      observador, "El observador no puede ser nulo"));
+  }
+
+  public void quitarObservadorConexion(IObservadorConexion observador) {
+    this.observadoresConexion.remove(observador);
   }
 
   public synchronized void iniciar(int puerto) throws IOException {
@@ -105,22 +118,31 @@ public class ServidorTCP {
   }
 
   private void leer(Socket socket) {
-    try (DataInputStream entrada = new DataInputStream(
-      new BufferedInputStream(socket.getInputStream()))) {
-      while (this.activo && !socket.isClosed()) {
-        int longitud = entrada.readInt();
-        if (longitud <= 0 || longitud > LONGITUD_MAXIMA_MENSAJE) {
-          throw new IOException("Longitud de mensaje inválida: " + longitud);
+    ConexionTCP conexion = null;
+    try {
+      conexion = new ConexionTCP(socket);
+      notificarConexion(conexion);
+      try (DataInputStream entrada = new DataInputStream(
+        new BufferedInputStream(socket.getInputStream()))) {
+        while (this.activo && !socket.isClosed()) {
+          int longitud = entrada.readInt();
+          if (longitud <= 0 || longitud > LONGITUD_MAXIMA_MENSAJE) {
+            throw new IOException("Longitud de mensaje inválida: " + longitud);
+          }
+          byte[] datos = new byte[longitud];
+          entrada.readFully(datos);
+          notificar(datos);
+          notificarRecepcion(conexion, datos);
         }
-        byte[] datos = new byte[longitud];
-        entrada.readFully(datos);
-        notificar(datos);
       }
     } catch (IOException e) {
       if (this.activo && !socket.isClosed() && !(e instanceof EOFException)) {
         System.err.println("Error al leer del cliente " + socket.getPort() + ": " + e.getMessage());
       }
     } finally {
+      if (conexion != null) {
+        notificarDesconexion(conexion);
+      }
       this.clientes.remove(socket);
       cerrar(socket);
     }
@@ -132,6 +154,36 @@ public class ServidorTCP {
         observador.alRecibir(datos);
       } catch (RuntimeException e) {
         System.err.println("Error al notificar un mensaje: " + e.getMessage());
+      }
+    }
+  }
+
+  private void notificarConexion(IConexion conexion) {
+    for (IObservadorConexion observador : this.observadoresConexion) {
+      try {
+        observador.alConectar(conexion);
+      } catch (RuntimeException e) {
+        System.err.println("Error al notificar una conexión: " + e.getMessage());
+      }
+    }
+  }
+
+  private void notificarRecepcion(IConexion conexion, byte[] datos) {
+    for (IObservadorConexion observador : this.observadoresConexion) {
+      try {
+        observador.alRecibir(conexion, datos);
+      } catch (RuntimeException e) {
+        System.err.println("Error al notificar un mensaje: " + e.getMessage());
+      }
+    }
+  }
+
+  private void notificarDesconexion(IConexion conexion) {
+    for (IObservadorConexion observador : this.observadoresConexion) {
+      try {
+        observador.alDesconectar(conexion);
+      } catch (RuntimeException e) {
+        System.err.println("Error al notificar una desconexión: " + e.getMessage());
       }
     }
   }
