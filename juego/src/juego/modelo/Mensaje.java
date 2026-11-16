@@ -1,0 +1,10 @@
+package juego.modelo;
+
+public enum Mensaje {
+  CASILLA_VALIDA,
+  CASILLA_INVALIDA,
+  PATRON_VALIDO,
+  PATRON_INVALIDO,
+  VICTORIA_VALIDA,
+  VICTORIA_INVALIDA
+}

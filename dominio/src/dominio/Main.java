@@ -1,0 +1,527 @@
+package dominio;
+
+import dominio.modelo.Baraja;
+import dominio.modelo.Carta;
+import dominio.modelo.Casilla;
+import dominio.modelo.CatalogoCartas;
+import dominio.modelo.EstadoPartida;
+import dominio.modelo.Griton;
+import dominio.modelo.Jugador;
+import dominio.modelo.Partida;
+import dominio.modelo.Tabla;
+import dominio.modelo.TipoVictoria;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Random;
+import java.util.Set;
+
+public final class Main {
+
+  private static int verificaciones;
+
+  private Main() {
+  }
+
+  public static void main(String[] args) {
+    ejecutarPruebas();
+    ejecutarDemostracion();
+  }
+
+  private static void ejecutarPruebas() {
+    verificarCatalogo();
+    verificarRevolver();
+    verificarTabla();
+    verificarBaraja();
+    verificarGriton();
+    verificarPartida();
+    verificarEncapsulamiento();
+    verificarDeterminismo();
+    System.out.println("OK: " + verificaciones + " verificaciones");
+  }
+
+  private static void ejecutarDemostracion() {
+    Random generador = new Random(2026L);
+    Partida partida = Partida.crear(
+      List.of("Ana", "Luis", "Sofía"),
+      TipoVictoria.LINEA,
+      generador
+    );
+    partida.iniciar();
+
+    System.out.println("Partida " + partida.obtenerId());
+    System.out.println("Victoria: " + partida.obtenerTipoVictoria().obtenerDescripcion());
+
+    while (partida.puedeCantar() && !partida.estaFinalizada()) {
+      Carta carta = partida.cantarSiguiente();
+      System.out.println("Carta cantada: " + carta);
+
+      for (Jugador jugador : partida.obtenerJugadores()) {
+        try {
+          boolean marcada = partida.marcar(jugador, carta);
+          System.out.println("  " + jugador.obtenerNombre() + " -> "
+            + (marcada ? "marcó" : "ya estaba marcada"));
+        } catch (IllegalArgumentException excepcion) {
+          System.out.println("  " + jugador.obtenerNombre() + " -> no tiene la carta");
+        }
+      }
+
+      for (Jugador jugador : partida.obtenerJugadoresConLoteria()) {
+        if (partida.gritarLoteria(jugador)) {
+          System.out.println("¡Lotería! Ganó " + jugador.obtenerNombre());
+          break;
+        }
+      }
+    }
+
+    if (partida.obtenerGanadores().isEmpty()) {
+      partida.finalizar();
+      System.out.println("Se agotó el mazo sin ganador");
+    }
+  }
+
+  private static void verificarCatalogo() {
+    afirmar(CatalogoCartas.obtenerTotal() == 54, "El catálogo debe tener 54 cartas");
+    Set<Integer> ids = new HashSet<>();
+    Set<String> nombres = new HashSet<>();
+    for (Carta carta : CatalogoCartas.obtenerTodas()) {
+      afirmar(carta.obtenerId() >= 1 && carta.obtenerId() <= 54, "Id de carta fuera de rango");
+      afirmar(ids.add(carta.obtenerId()), "Id de carta repetido");
+      afirmar(nombres.add(carta.obtenerNombre().toLowerCase()), "Nombre de carta repetido");
+    }
+    afirmar(CatalogoCartas.obtenerPorId(1).obtenerNombre().equals("El Gallo"), "La carta 1 debe ser El Gallo");
+    afirmar(CatalogoCartas.obtenerPorId(54).obtenerNombre().equals("La Rana"), "La carta 54 debe ser La Rana");
+    afirmar(CatalogoCartas.obtenerPorNombre("el gallo").obtenerId() == 1, "La búsqueda por nombre debe ignorar mayúsculas");
+    afirmar(CatalogoCartas.contiene(carta(54)), "El catálogo debe contener La Rana");
+    afirmar(ids.size() == 54, "El catálogo debe tener 54 ids únicos");
+    try {
+      CatalogoCartas.obtenerPorId(99);
+      fallar("Buscar un id inexistente debió lanzar una excepción");
+    } catch (NoSuchElementException esperada) {
+      verificar();
+    }
+    try {
+      CatalogoCartas.obtenerPorNombre("La Carta Inexistente");
+      fallar("Buscar un nombre inexistente debió lanzar una excepción");
+    } catch (NoSuchElementException esperada) {
+      verificar();
+    }
+  }
+
+  private static void verificarRevolver() {
+    Baraja primera = new Baraja(CatalogoCartas.obtenerTodas());
+    Baraja segunda = new Baraja(CatalogoCartas.obtenerTodas());
+
+    primera.revolver(new Random(9L));
+    segunda.revolver(new Random(9L));
+
+    afirmar(primera.obtenerRestantes() == 54, "Revolver no debe perder cartas de la baraja");
+    afirmar(primera.obtenerCartasRestantes().equals(segunda.obtenerCartasRestantes()), "Revolver debe ser determinista con la misma semilla");
+  }
+
+  private static void verificarTabla() {
+    Tabla vacia = tablaDesde(1);
+    afirmar(!vacia.tieneLinea(), "Una tabla sin marcas no puede tener línea");
+    afirmar(vacia.obtenerAciertos() == 0, "Una tabla nueva debe tener cero aciertos");
+
+    Tabla fila = tablaDesde(1);
+    marcar(fila, 1, 2, 3, 4);
+    afirmar(fila.tieneLinea(), "Cuatro cartas de una fila deben formar línea");
+    afirmar(fila.cumple(TipoVictoria.LINEA), "La tabla debe cumplir la victoria por línea");
+
+    Tabla columna = tablaDesde(1);
+    marcar(columna, 1, 5, 9, 13);
+    afirmar(columna.tieneLinea(), "Cuatro cartas de una columna deben formar línea");
+
+    Tabla diagonal = tablaDesde(1);
+    marcar(diagonal, 1, 6, 11, 16);
+    afirmar(diagonal.tieneLinea(), "La diagonal principal debe formar línea");
+
+    Tabla diagonalInversa = tablaDesde(1);
+    marcar(diagonalInversa, 4, 7, 10, 13);
+    afirmar(diagonalInversa.tieneLinea(), "La diagonal inversa debe formar línea");
+
+    Tabla cuadro = tablaDesde(1);
+    marcar(cuadro, 1, 2, 5, 6);
+    afirmar(cuadro.tieneCuadro(), "Un bloque de 2x2 debe formar cuadro");
+    afirmar(cuadro.cumple(TipoVictoria.CUADRO), "La tabla debe cumplir la victoria por cuadro");
+
+    Tabla esquinas = tablaDesde(1);
+    marcar(esquinas, 1, 4, 13, 16);
+    afirmar(esquinas.tieneCuatroEsquinas(), "Las cuatro esquinas deben estar marcadas");
+    afirmar(esquinas.cumple(TipoVictoria.CUATRO_ESQUINAS), "La tabla debe cumplir la victoria por esquinas");
+
+    Tabla llena = tablaDesde(1);
+    for (int id = 1; id <= 16; id++) {
+      afirmar(marcarTabla(llena, carta(id)), "La carta " + id + " debe pertenecer a la tabla");
+    }
+    afirmar(llena.tieneTablaLlena(), "La tabla con 16 marcas debe estar llena");
+    afirmar(llena.cumple(TipoVictoria.TABLA_LLENA), "La tabla debe cumplir la victoria por tabla llena");
+    afirmar(llena.obtenerCartasMarcadas().size() == 16, "Deben existir 16 cartas marcadas");
+
+    Tabla generada = Tabla.generar(new Random(7L));
+    afirmar(generada.obtenerCartas().size() == 16, "La tabla generada debe tener 16 cartas");
+    afirmar(new HashSet<>(generada.obtenerCartas()).size() == 16, "La tabla generada no debe repetir cartas");
+
+    afirmar(!marcarTabla(vacia, carta(54)), "No se puede marcar una carta que no está en la tabla");
+    afirmar(!vacia.estaMarcada(0, 0), "La posición debe iniciar sin marca");
+    afirmar(!desmarcarTabla(vacia, carta(54)), "No se puede desmarcar una carta ausente");
+
+    Tabla tablaCasillas = tablaDesde(1);
+    Casilla casilla = tablaCasillas.obtenerCasilla(0, 0);
+    afirmar(casilla.obtenerFila() == 0, "La casilla debe conservar su fila");
+    afirmar(casilla.obtenerColumna() == 0, "La casilla debe conservar su columna");
+    afirmar(casilla.obtenerCarta().equals(carta(1)), "La casilla debe conservar su carta");
+    afirmar(casilla.contiene(carta(1)), "La casilla debe contener su carta");
+    afirmar(!casilla.contiene(carta(2)), "La casilla no debe contener otra carta");
+    afirmar(!casilla.estaMarcada(), "La casilla debe iniciar sin marca");
+    afirmar(marcarCasilla(casilla), "La casilla debe marcarse la primera vez");
+    afirmar(casilla.estaMarcada(), "La casilla debe quedar marcada");
+    afirmar(!marcarCasilla(casilla), "La casilla no debe marcarse dos veces");
+    afirmar(tablaCasillas.estaMarcada(0, 0), "La tabla debe reflejar la marca de la casilla");
+    afirmar(tablaCasillas.obtenerCasillas().size() == 16, "La tabla debe exponer sus 16 casillas");
+    afirmar(tablaCasillas.obtenerCasillasMarcadas().size() == 1, "La tabla debe exponer una casilla marcada");
+    afirmar(desmarcarCasilla(casilla), "La casilla debe desmarcarse");
+    afirmar(!desmarcarCasilla(casilla), "La casilla no debe desmarcarse dos veces");
+    afirmar(!tablaCasillas.estaMarcada(0, 0), "La tabla debe reflejar el desmarque de la casilla");
+    afirmar(marcarTabla(tablaCasillas, carta(1)), "La tabla debe marcar una carta propia");
+    reiniciarTabla(tablaCasillas);
+    afirmar(tablaCasillas.obtenerAciertos() == 0, "Reiniciar debe quitar todas las marcas");
+
+    try {
+      tablaCasillas.obtenerCasilla(4, 0);
+      fallar("Una posición fuera de la tabla debe lanzar una excepción");
+    } catch (IllegalArgumentException esperada) {
+      verificar();
+    }
+
+    try {
+      List<Carta> repetidas = new ArrayList<>();
+      for (int id = 1; id <= 15; id++) {
+        repetidas.add(carta(id));
+      }
+      repetidas.add(carta(15));
+      new Tabla(repetidas);
+      fallar("La tabla debió rechazar cartas repetidas");
+    } catch (IllegalArgumentException esperada) {
+      verificar();
+    }
+  }
+
+  private static void verificarBaraja() {
+    Baraja completa = new Baraja(CatalogoCartas.obtenerTodas());
+    completa.revolver(new Random(11L));
+    afirmar(completa.obtenerRestantes() == 54, "La baraja completa debe tener 54 cartas");
+    afirmar(completa.obtenerCantadas().isEmpty(), "La baraja nueva no debe tener cartas cantadas");
+    Set<Carta> sacadas = new HashSet<>();
+    while (!completa.estaVacia()) {
+      afirmar(sacadas.add(completa.sacarSiguiente()), "La baraja no debe repetir cartas al sacar");
+    }
+    afirmar(sacadas.size() == 54, "Se deben sacar las 54 cartas");
+    afirmar(completa.fueCantada(carta(11)), "La baraja debe recordar las cartas cantadas");
+    afirmar(completa.obtenerUltimaCantada().isPresent(), "La baraja debe exponer la última carta cantada");
+    try {
+      completa.sacarSiguiente();
+      fallar("Sacar de una baraja vacía debió lanzar una excepción");
+    } catch (NoSuchElementException esperada) {
+      verificar();
+    }
+
+    Baraja ordenada = new Baraja(List.of(carta(4), carta(3), carta(2), carta(1)));
+    afirmar(ordenada.sacarSiguiente().obtenerId() == 1, "La baraja debe sacar desde la parte superior");
+    afirmar(ordenada.obtenerRestantes() == 3, "La baraja debe descontar la carta sacada");
+    afirmar(ordenada.obtenerCantadas().size() == 1, "La baraja debe registrar la carta sacada");
+    afirmar(ordenada.obtenerUltimaCantada().orElseThrow().obtenerId() == 1, "La última cantada debe ser la sacada");
+
+    try {
+      new Baraja(List.of(carta(1), carta(1)));
+      fallar("La baraja debió rechazar cartas repetidas");
+    } catch (IllegalArgumentException esperada) {
+      verificar();
+    }
+  }
+
+  private static void verificarGriton() {
+    Griton griton = Griton.completo(new Random(5L));
+    afirmar(griton.obtenerRestantes() == 54, "El gritón completo debe tener 54 cartas");
+    afirmar(griton.puedeGritar(), "El gritón debe poder gritar al iniciar");
+    afirmar(!griton.estaVacio(), "El gritón no debe estar vacío al iniciar");
+    afirmar(griton.obtenerUltimaCarta().isEmpty(), "El gritón no debe tener última carta al iniciar");
+
+    Set<Carta> gritadas = new HashSet<>();
+    while (griton.puedeGritar()) {
+      Carta carta = griton.gritarSiguiente();
+      afirmar(gritadas.add(carta), "El gritón no debe repetir cartas");
+      afirmar(griton.fueGritada(carta), "El gritón debe recordar las cartas gritadas");
+      afirmar(griton.obtenerUltimaCarta().orElseThrow().equals(carta), "La última carta debe ser la gritada");
+    }
+
+    afirmar(gritadas.size() == 54, "El gritón debe gritar las 54 cartas");
+    afirmar(griton.obtenerCartasGritadas().size() == 54, "El gritón debe conservar el historial");
+    afirmar(griton.estaVacio(), "El gritón debe quedar vacío");
+    afirmar(!griton.puedeGritar(), "El gritón vacío no debe poder gritar");
+    try {
+      griton.gritarSiguiente();
+      fallar("Gritar sin cartas debió lanzar una excepción");
+    } catch (NoSuchElementException esperada) {
+      verificar();
+    }
+
+    Griton ordenado = new Griton(
+      new Baraja(List.of(carta(4), carta(3), carta(2), carta(1))),
+      new Random(1L)
+    );
+    afirmar(ordenado.gritarSiguiente().obtenerId() == 1, "El gritón debe respetar el orden del mazo al no barajear");
+    afirmar(ordenado.gritarSiguiente().obtenerId() == 2, "El gritón debe seguir el orden del mazo");
+    afirmar(ordenado.obtenerRestantes() == 2, "El gritón debe descontar las cartas gritadas");
+    afirmar(ordenado.obtenerUltimaCarta().orElseThrow().obtenerId() == 2, "La última carta debe coincidir");
+    int restantes = ordenado.obtenerRestantes();
+    ordenado.barajear();
+    afirmar(ordenado.obtenerRestantes() == restantes, "Barajear no debe perder las cartas restantes");
+
+    Griton primero = Griton.completo(new Random(77L));
+    Griton segundo = Griton.completo(new Random(77L));
+    afirmar(primero.obtenerCartasRestantes().equals(segundo.obtenerCartasRestantes()), "El gritón debe ser determinista con la misma semilla");
+  }
+
+  private static void verificarPartida() {
+    Random generador = new Random(42L);
+    Partida partida = Partida.crear(List.of("Ana", "Luis"), TipoVictoria.LINEA, generador);
+    afirmar(partida.obtenerEstado() == EstadoPartida.CREADA, "La partida debe iniciar creada");
+    afirmar(partida.obtenerJugadores().size() == 2, "La partida debe tener dos jugadores");
+    afirmar(partida.obtenerCartasRestantes().size() == 54, "La partida debe iniciar con 54 cartas");
+    afirmar(partida.obtenerCartasCantadas().isEmpty(), "La partida no debe tener cartas cantadas al iniciar");
+    afirmar(partida.obtenerUltimaCarta().isEmpty(), "No debe existir última carta al iniciar");
+    afirmar(!partida.puedeCantar(), "No se puede cantar antes de iniciar");
+
+    try {
+      partida.cantarSiguiente();
+      fallar("No se puede cantar antes de iniciar");
+    } catch (IllegalStateException esperada) {
+      verificar();
+    }
+
+    partida.iniciar();
+    afirmar(partida.estaEnCurso(), "La partida debe estar en curso");
+    afirmar(partida.puedeCantar(), "La partida debe permitir cantar");
+
+    Carta primera = partida.cantarSiguiente();
+    afirmar(partida.obtenerCartasCantadas().size() == 1, "Debe registrarse la carta cantada");
+    afirmar(partida.obtenerUltimaCarta().orElseThrow().equals(primera), "La última carta debe ser la cantada");
+    afirmar(partida.obtenerCartasRestantes().size() == 53, "El mazo debe quedar con 53 cartas");
+    afirmar(!partida.obtenerCartasRestantes().contains(primera), "La carta cantada no debe seguir en el mazo");
+
+    Carta noCantada = CatalogoCartas.obtenerPorId(primera.obtenerId() == 54 ? 1 : primera.obtenerId() + 1);
+    try {
+      partida.marcar(partida.obtenerJugadores().get(0), noCantada);
+      fallar("No se puede marcar una carta que no se ha cantado");
+    } catch (IllegalArgumentException esperada) {
+      verificar();
+    }
+
+    for (Jugador jugador : partida.obtenerJugadores()) {
+      try {
+        partida.marcar(jugador, primera);
+      } catch (IllegalArgumentException esperada) {
+        verificar();
+      }
+    }
+
+    Jugador externo = new Jugador("Externo", tablaDesde(39));
+    try {
+      partida.marcar(externo, primera);
+      fallar("Un jugador externo no puede marcar en la partida");
+    } catch (IllegalStateException esperada) {
+      verificar();
+    }
+
+    partida.pausar();
+    afirmar(partida.obtenerEstado() == EstadoPartida.PAUSADA, "La partida debe quedar pausada");
+    afirmar(!partida.puedeCantar(), "Una partida pausada no puede cantar");
+    try {
+      partida.cantarSiguiente();
+      fallar("Una partida pausada no puede cantar");
+    } catch (IllegalStateException esperada) {
+      verificar();
+    }
+    partida.reanudar();
+    afirmar(partida.estaEnCurso(), "La partida debe reanudarse");
+
+    Jugador ana = new Jugador("Ana", tablaDesde(1));
+    Jugador luis = new Jugador("Luis", tablaDesde(17));
+    Partida victoria = new Partida(
+      "partida-victoria",
+      List.of(ana, luis),
+      new Griton(
+        new Baraja(List.of(carta(4), carta(3), carta(2), carta(1))),
+        new Random(1L)
+      ),
+      TipoVictoria.LINEA
+    );
+    victoria.iniciar();
+    for (int id = 1; id <= 4; id++) {
+      Carta cantada = victoria.cantarSiguiente();
+      afirmar(cantada.obtenerId() == id, "Las cartas deben cantarse en el orden esperado");
+      afirmar(victoria.marcar(ana, cantada), "Ana debe marcar la carta cantada");
+      try {
+        victoria.marcar(luis, cantada);
+        fallar("Luis no puede marcar una carta que no tiene");
+      } catch (IllegalArgumentException esperada) {
+        verificar();
+      }
+    }
+    afirmar(victoria.obtenerJugadoresConLoteria().contains(ana), "Ana debe tener lotería");
+    afirmar(!victoria.obtenerJugadoresConLoteria().contains(luis), "Luis no debe tener lotería");
+    afirmar(victoria.gritarLoteria(ana), "Ana debe ganar al gritar lotería");
+    afirmar(victoria.estaFinalizada(), "La partida debe finalizar al ganar");
+    afirmar(victoria.obtenerGanadores().contains(ana), "Ana debe quedar registrada como ganadora");
+    try {
+      victoria.gritarLoteria(luis);
+      fallar("No se puede gritar lotería después de finalizar");
+    } catch (IllegalStateException esperada) {
+      verificar();
+    }
+    try {
+      victoria.marcar(ana, carta(1));
+      fallar("No se puede marcar después de finalizar");
+    } catch (IllegalStateException esperada) {
+      verificar();
+    }
+    try {
+      victoria.pausar();
+      fallar("No se puede pausar una partida finalizada");
+    } catch (IllegalStateException esperada) {
+      verificar();
+    }
+    try {
+      victoria.iniciar();
+      fallar("No se puede reiniciar una partida finalizada");
+    } catch (IllegalStateException esperada) {
+      verificar();
+    }
+    afirmar(victoria.obtenerGanadores().size() == 1, "Debe existir un solo ganador");
+
+    Partida sinCartas = new Partida(
+      "partida-sin-cartas",
+      List.of(new Jugador("Ana", tablaDesde(1))),
+      new Griton(new Baraja(List.of(carta(1))), new Random(1L)),
+      TipoVictoria.LINEA
+    );
+    sinCartas.iniciar();
+    sinCartas.cantarSiguiente();
+    afirmar(!sinCartas.puedeCantar(), "No se puede cantar sin cartas");
+    try {
+      sinCartas.cantarSiguiente();
+      fallar("Cantar sin cartas debió lanzar una excepción");
+    } catch (NoSuchElementException esperada) {
+      verificar();
+      afirmar(sinCartas.estaEnCurso(), "La excepción no debe cambiar el estado de la partida");
+    }
+    afirmar(!sinCartas.estaFinalizada(), "La partida no debe finalizar como efecto de la excepción");
+    sinCartas.finalizar();
+    afirmar(sinCartas.estaFinalizada(), "El llamador debe poder finalizar la partida agotada");
+
+    try {
+      Partida.crear(List.of("Ana", "ana"), new Random(1L));
+      fallar("No se deben permitir nombres repetidos");
+    } catch (IllegalArgumentException esperada) {
+      verificar();
+    }
+  }
+
+  private static void verificarEncapsulamiento() {
+    afirmarNoPublico(Tabla.class, "marcar", Carta.class);
+    afirmarNoPublico(Tabla.class, "desmarcar", Carta.class);
+    afirmarNoPublico(Tabla.class, "reiniciar");
+    afirmarNoPublico(Casilla.class, "marcar");
+    afirmarNoPublico(Casilla.class, "desmarcar");
+    afirmarNoPublico(Casilla.class, "reiniciar");
+    afirmarNoPublico(Jugador.class, "marcar", Carta.class);
+  }
+
+  private static void verificarDeterminismo() {
+    Partida primera = Partida.crear(List.of("Ana", "Luis"), TipoVictoria.LINEA, new Random(123L));
+    Partida segunda = Partida.crear(List.of("Ana", "Luis"), TipoVictoria.LINEA, new Random(123L));
+    for (int i = 0; i < primera.obtenerJugadores().size(); i++) {
+      List<Carta> tablaPrimera = primera.obtenerJugadores().get(i).obtenerTabla().obtenerCartas();
+      List<Carta> tablaSegunda = segunda.obtenerJugadores().get(i).obtenerTabla().obtenerCartas();
+      afirmar(tablaPrimera.equals(tablaSegunda), "Las tablas deben ser deterministas con la misma semilla");
+    }
+    afirmar(primera.obtenerCartasRestantes().equals(segunda.obtenerCartasRestantes()), "El mazo debe ser determinista con la misma semilla");
+  }
+
+  private static void marcar(Tabla tabla, int... ids) {
+    for (int id : ids) {
+      afirmar(marcarTabla(tabla, carta(id)), "La carta " + id + " debe pertenecer a la tabla");
+    }
+  }
+
+  private static Tabla tablaDesde(int inicio) {
+    List<Carta> cartas = new ArrayList<>();
+    for (int id = inicio; id < inicio + 16; id++) {
+      cartas.add(carta(id));
+    }
+    return new Tabla(cartas);
+  }
+
+  private static Carta carta(int id) {
+    return CatalogoCartas.obtenerPorId(id);
+  }
+
+  private static boolean marcarTabla(Tabla tabla, Carta carta) {
+    return (Boolean) invocar(Tabla.class, tabla, "marcar", new Class<?>[]{Carta.class}, carta);
+  }
+
+  private static boolean desmarcarTabla(Tabla tabla, Carta carta) {
+    return (Boolean) invocar(Tabla.class, tabla, "desmarcar", new Class<?>[]{Carta.class}, carta);
+  }
+
+  private static void reiniciarTabla(Tabla tabla) {
+    invocar(Tabla.class, tabla, "reiniciar", new Class<?>[0]);
+  }
+
+  private static boolean marcarCasilla(Casilla casilla) {
+    return (Boolean) invocar(Casilla.class, casilla, "marcar", new Class<?>[0]);
+  }
+
+  private static boolean desmarcarCasilla(Casilla casilla) {
+    return (Boolean) invocar(Casilla.class, casilla, "desmarcar", new Class<?>[0]);
+  }
+
+  private static Object invocar(Class<?> tipo, Object objetivo, String nombre, Class<?>[] parametros, Object... argumentos) {
+    try {
+      Method metodo = tipo.getDeclaredMethod(nombre, parametros);
+      metodo.setAccessible(true);
+      return metodo.invoke(objetivo, argumentos);
+    } catch (ReflectiveOperationException excepcion) {
+      throw new AssertionError("No se pudo invocar " + tipo.getSimpleName() + "." + nombre, excepcion);
+    }
+  }
+
+  private static void afirmarNoPublico(Class<?> tipo, String metodo, Class<?>... parametros) {
+    try {
+      int modificadores = tipo.getDeclaredMethod(metodo, parametros).getModifiers();
+      afirmar(!Modifier.isPublic(modificadores), tipo.getSimpleName() + "." + metodo + " no debe ser público");
+    } catch (NoSuchMethodException excepcion) {
+      fallar("No existe el método " + tipo.getSimpleName() + "." + metodo);
+    }
+  }
+
+  private static void afirmar(boolean condicion, String mensaje) {
+    verificar();
+    if (!condicion) {
+      throw new AssertionError(mensaje);
+    }
+  }
+
+  private static void verificar() {
+    verificaciones++;
+  }
+
+  private static void fallar(String mensaje) {
+    throw new AssertionError(mensaje);
+  }
+}
