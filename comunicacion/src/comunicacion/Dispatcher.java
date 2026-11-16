@@ -9,6 +9,10 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 public class Dispatcher implements IDispatcher {
 
+  private record Sobre(String host, int puerto, byte[] datos) {
+
+  }
+
   private final BlockingQueue<Sobre> cola = new LinkedBlockingDeque<>();
   private final List<ObservadorDispatcher> observadores = new CopyOnWriteArrayList<>();
   private Thread hilo;
@@ -26,7 +30,7 @@ public class Dispatcher implements IDispatcher {
     this.observadores.remove(observador);
   }
 
-  public void notificarObservadores(Sobre sobre) {
+  private void notificarObservadores(Sobre sobre) {
     for (ObservadorDispatcher observador : this.observadores) {
       try {
         observador.alEnviar(sobre.host(), sobre.puerto(), sobre.datos());
