@@ -1,0 +1,24 @@
+# NetBeans
+nbproject/private/
+nbproject/build-impl.xml~
+build/
+dist/
+nbbuild/
+nbdist/
+nbactions.xml
+nb-configuration.xml
+
+# Java
+*.class
+hs_err_pid*
+replay_pid*
+
+# Editores y sistema
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+.DS_Store
+Thumbs.db
