@@ -1,10 +1,18 @@
 package juego.fachada;
 
 import comun.CartaMensaje;
-import comun.ComandoJuego;
-import comun.EventoPartida;
+import comun.ComandoCerrar;
+import comun.ComandoIniciar;
+import comun.ComandoMarcar;
+import comun.ComandoPatron;
+import comun.ComandoVictoria;
+import comun.EstadoJuego;
+import comun.EventoBroker;
+import comun.EventoCartaCantada;
+import comun.EventoFin;
+import comun.EventoSincronizacion;
+import comun.EventoVictoria;
 import comun.JugadorMensaje;
-import comun.MensajeBroker;
 import comunicacion.Dispatcher;
 import comunicacion.DispatcherFactory;
 import comunicacion.Receptor;
@@ -100,13 +108,13 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
         "No se pudo iniciar el MVC en el puerto " + puertoLocal);
     }
     conectado = true;
-    enviar(new ComandoJuego(ComandoJuego.INICIAR, jugadorLocal, 0, patron.name()));
+    enviar(new ComandoIniciar(jugadorLocal));
   }
 
   @Override
   public void cerrar() {
     if (conectado) {
-      enviar(new ComandoJuego(ComandoJuego.CERRAR, jugadorLocal, 0, patron.name()));
+      enviar(new ComandoCerrar(jugadorLocal));
       conectado = false;
     }
     receptor.detener();
@@ -174,7 +182,7 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
     if (!jugador.marcarCasilla(carta)) {
       return Mensaje.CASILLA_INVALIDA;
     }
-    enviar(new ComandoJuego(ComandoJuego.MARCAR, jugadorLocal, idDe(carta), patron.name()));
+    enviar(new ComandoMarcar(jugadorLocal, idDe(carta)));
     return Mensaje.CASILLA_VALIDA;
   }
 
@@ -184,7 +192,7 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
       return Mensaje.PATRON_INVALIDO;
     }
     this.patron = patron;
-    enviar(new ComandoJuego(ComandoJuego.PATRON, jugadorLocal, 0, patron.name()));
+    enviar(new ComandoPatron(jugadorLocal, patron.name()));
     if (!puedeJugar(jugador) || !jugador.cumple(patron)) {
       return Mensaje.PATRON_INVALIDO;
     }
@@ -197,32 +205,37 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
       return Mensaje.VICTORIA_INVALIDA;
     }
     this.patron = patron;
-    enviar(new ComandoJuego(ComandoJuego.VICTORIA, jugadorLocal, 0, patron.name()));
+    enviar(new ComandoVictoria(jugadorLocal, patron.name()));
     return Mensaje.VICTORIA_VALIDA;
   }
 
   @Override
   public void alRecibir(byte[] datos) {
-    Object objeto = serializador.deserializar(datos, Object.class);
-    if (!(objeto instanceof EventoPartida evento)) {
-      return;
+    Object contenido = serializador.deserializar(datos, Object.class);
+    if (contenido instanceof EventoSincronizacion evento) {
+      actualizar(evento.estado());
+    } else if (contenido instanceof EventoCartaCantada evento) {
+      actualizar(evento.estado());
+    } else if (contenido instanceof EventoVictoria evento) {
+      actualizar(evento.estado());
+    } else if (contenido instanceof EventoFin evento) {
+      actualizar(evento.estado());
     }
-    actualizar(evento);
     notificarOyentes();
   }
 
-  private void actualizar(EventoPartida evento) {
-    estadoPartida = convertirEstado(evento.estado());
-    if (evento.patron() != null && !evento.patron().isBlank()) {
+  private void actualizar(EstadoJuego estado) {
+    estadoPartida = convertirEstado(estado.estado());
+    if (estado.patron() != null && !estado.patron().isBlank()) {
       try {
-        patron = Patron.valueOf(evento.patron().trim().toUpperCase(Locale.ROOT));
+        patron = Patron.valueOf(estado.patron().trim().toUpperCase(Locale.ROOT));
       } catch (IllegalArgumentException e) {
       }
     }
-    restantes = evento.restantes();
-    ganador = evento.ganador() == null ? "" : evento.ganador();
-    cartasCantadas = convertirCartas(evento.cartasCantadas());
-    jugadores = convertirJugadores(evento.jugadores());
+    restantes = estado.restantes();
+    ganador = estado.ganador() == null ? "" : estado.ganador();
+    cartasCantadas = convertirCartas(estado.cartasCantadas());
+    jugadores = convertirJugadores(estado.jugadores());
   }
 
   private EstadoPartida convertirEstado(String estado) {
@@ -292,11 +305,11 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
       && jugador.obtenerNombre().equals(jugadorLocal);
   }
 
-  private void enviar(ComandoJuego comando) {
+  private void enviar(Object comando) {
     if (!dispatcher.estaActivo()) {
       return;
     }
-    byte[] datos = serializador.serializar(new MensajeBroker(temaComandos, comando));
+    byte[] datos = serializador.serializar(new EventoBroker(temaComandos, comando));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
   }
 

@@ -1,10 +1,19 @@
 package dominio;
 
 import comun.CartaMensaje;
-import comun.ComandoJuego;
-import comun.EventoPartida;
+import comun.ComandoCerrar;
+import comun.ComandoIniciar;
+import comun.ComandoMarcar;
+import comun.ComandoPatron;
+import comun.ComandoVictoria;
+import comun.EstadoJuego;
+import comun.EventoBroker;
+import comun.EventoCartaCantada;
+import comun.EventoError;
+import comun.EventoFin;
+import comun.EventoSincronizacion;
+import comun.EventoVictoria;
 import comun.JugadorMensaje;
-import comun.MensajeBroker;
 import comunicacion.Dispatcher;
 import comunicacion.Receptor;
 import comunicacion.api.IReceptorExterno;
@@ -139,28 +148,28 @@ public class Dominio implements IReceptorExterno {
 
   @Override
   public void alRecibir(byte[] datos) {
-    Object objeto = serializador.deserializar(datos, Object.class);
-    if (!(objeto instanceof ComandoJuego comando)) {
-      return;
-    }
+    Object contenido = serializador.deserializar(datos, Object.class);
     synchronized (candado) {
       if (!activo) {
         return;
       }
-      switch (comando.accion()) {
-        case ComandoJuego.INICIAR ->
-          iniciarPartida(comando.jugador());
-        case ComandoJuego.MARCAR ->
-          marcar(comando.jugador(), comando.cartaId());
-        case ComandoJuego.PATRON ->
-          cambiarPatron(comando.patron());
-        case ComandoJuego.VICTORIA ->
-          gritarVictoria(comando.jugador(), comando.patron());
-        case ComandoJuego.CERRAR ->
-          cerrarPartida();
-        default ->
-          publicar(EventoPartida.ERROR, "Comando desconocido: " + comando.accion());
-      }
+      procesar(contenido);
+    }
+  }
+
+  private void procesar(Object contenido) {
+    if (contenido instanceof ComandoIniciar comando) {
+      iniciarPartida(comando.jugador());
+    } else if (contenido instanceof ComandoMarcar comando) {
+      marcar(comando.jugador(), comando.cartaId());
+    } else if (contenido instanceof ComandoPatron comando) {
+      cambiarPatron(comando.patron());
+    } else if (contenido instanceof ComandoVictoria comando) {
+      gritarVictoria(comando.jugador(), comando.patron());
+    } else if (contenido instanceof ComandoCerrar) {
+      cerrarPartida();
+    } else {
+      publicar(new EventoError("Comando desconocido: " + contenido));
     }
   }
 
@@ -178,7 +187,7 @@ public class Dominio implements IReceptorExterno {
 
   private void iniciarPartida(String jugador) {
     if (partida != null && !partida.estaFinalizada()) {
-      publicar(EventoPartida.SINCRONIZACION, "");
+      publicar(new EventoSincronizacion(estadoJuego()));
       return;
     }
     if (jugador != null && !jugador.isBlank()) {
@@ -203,7 +212,7 @@ public class Dominio implements IReceptorExterno {
     partida.iniciar();
     patronActual = PATRON_POR_DEFECTO;
     detenerTemporizador();
-    publicar(EventoPartida.SINCRONIZACION, "");
+    publicar(new EventoSincronizacion(estadoJuego()));
     cantarSiguiente();
     if (partida.estaEnCurso() && partida.puedeCantar()) {
       temporizador = new Timer("dominio-cartas", true);
@@ -231,7 +240,7 @@ public class Dominio implements IReceptorExterno {
     }
     Carta carta = partida.cantarSiguiente();
     marcarOponentes(carta);
-    publicar(EventoPartida.CARTA_CANTADA, "");
+    publicar(new EventoCartaCantada(estadoJuego()));
     if (!partida.puedeCantar()) {
       finalizarPorAgotamiento();
     }
@@ -254,23 +263,23 @@ public class Dominio implements IReceptorExterno {
 
   private void marcar(String nombreJugador, int cartaId) {
     if (partida == null || !partida.estaEnCurso()) {
-      publicar(EventoPartida.ERROR, "La partida no está en curso");
+      publicar(new EventoError("La partida no está en curso"));
       return;
     }
     try {
       Carta carta = CatalogoCartas.obtenerPorId(cartaId);
       Jugador jugador = buscarJugador(nombreJugador);
       if (jugador == null) {
-        publicar(EventoPartida.ERROR, "El jugador no participa en la partida");
+        publicar(new EventoError("El jugador no participa en la partida"));
         return;
       }
       if (!partida.marcar(jugador, carta)) {
-        publicar(EventoPartida.ERROR, "La casilla ya estaba marcada");
+        publicar(new EventoError("La casilla ya estaba marcada"));
         return;
       }
-      publicar(EventoPartida.SINCRONIZACION, "");
+      publicar(new EventoSincronizacion(estadoJuego()));
     } catch (RuntimeException e) {
-      publicar(EventoPartida.ERROR, e.getMessage());
+      publicar(new EventoError(e.getMessage()));
     }
   }
 
@@ -278,31 +287,31 @@ public class Dominio implements IReceptorExterno {
     if (patron != null && !patron.isBlank()) {
       patronActual = patron.trim().toUpperCase(Locale.ROOT);
     }
-    publicar(EventoPartida.SINCRONIZACION, "");
+    publicar(new EventoSincronizacion(estadoJuego()));
   }
 
   private void gritarVictoria(String nombreJugador, String patron) {
     if (partida == null || !partida.estaEnCurso()) {
-      publicar(EventoPartida.ERROR, "La partida no está en curso");
+      publicar(new EventoError("La partida no está en curso"));
       return;
     }
     Jugador jugador = buscarJugador(nombreJugador);
     if (jugador == null) {
-      publicar(EventoPartida.ERROR, "El jugador no participa en la partida");
+      publicar(new EventoError("El jugador no participa en la partida"));
       return;
     }
     try {
       if (!partida.gritarLoteria(jugador, convertirTipoVictoria(patron))) {
-        publicar(EventoPartida.ERROR, "La victoria no es válida");
+        publicar(new EventoError("La victoria no es válida"));
         return;
       }
       if (patron != null && !patron.isBlank()) {
         patronActual = patron.trim().toUpperCase(Locale.ROOT);
       }
       detenerTemporizador();
-      publicar(EventoPartida.VICTORIA, "");
+      publicar(new EventoVictoria(estadoJuego()));
     } catch (RuntimeException e) {
-      publicar(EventoPartida.ERROR, e.getMessage());
+      publicar(new EventoError(e.getMessage()));
     }
   }
 
@@ -311,7 +320,7 @@ public class Dominio implements IReceptorExterno {
     if (partida != null && partida.estaEnCurso()) {
       partida.finalizar();
     }
-    publicar(EventoPartida.FIN, "");
+    publicar(new EventoFin(estadoJuego()));
   }
 
   private void finalizarPorAgotamiento() {
@@ -319,7 +328,7 @@ public class Dominio implements IReceptorExterno {
     if (partida != null && partida.estaEnCurso()) {
       partida.finalizar();
     }
-    publicar(EventoPartida.FIN, "");
+    publicar(new EventoFin(estadoJuego()));
   }
 
   private TipoVictoria convertirTipoVictoria(String patron) {
@@ -349,16 +358,15 @@ public class Dominio implements IReceptorExterno {
     return null;
   }
 
-  private void publicar(String tipo, String mensaje) {
-    EventoPartida evento = construirEvento(tipo, mensaje == null ? "" : mensaje);
-    byte[] datos = serializador.serializar(new MensajeBroker(temaEventos, evento));
+  private void publicar(Object evento) {
+    byte[] datos = serializador.serializar(new EventoBroker(temaEventos, evento));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
   }
 
-  private EventoPartida construirEvento(String tipo, String mensaje) {
+  private EstadoJuego estadoJuego() {
     if (partida == null) {
-      return new EventoPartida(tipo, "", "", patronActual, new ArrayList<>(),
-        new ArrayList<>(), 0, "", mensaje);
+      return new EstadoJuego("", "", patronActual, new ArrayList<>(),
+        new ArrayList<>(), 0, "");
     }
     List<JugadorMensaje> jugadores = new ArrayList<>();
     for (Jugador jugador : partida.obtenerJugadores()) {
@@ -370,16 +378,14 @@ public class Dominio implements IReceptorExterno {
     }
     String ganador = partida.obtenerGanadores().isEmpty()
       ? "" : partida.obtenerGanadores().get(0).obtenerNombre();
-    return new EventoPartida(
-      tipo,
+    return new EstadoJuego(
       partida.obtenerId(),
       partida.obtenerEstado().name(),
       patronActual,
       jugadores,
       cantadas,
       partida.obtenerCartasRestantes().size(),
-      ganador,
-      mensaje
+      ganador
     );
   }
 

@@ -4,7 +4,7 @@ import comunicacion.Dispatcher;
 import comunicacion.DispatcherFactory;
 import comunicacion.Receptor;
 import comunicacion.api.IReceptorExterno;
-import comun.MensajeBroker;
+import comun.EventoBroker;
 import java.util.List;
 import serializador.Serializador;
 import serializador.ISerializador;
@@ -76,8 +76,8 @@ public class Broker implements IReceptorExterno {
   @Override
   public void alRecibir(byte[] datos) {
     Object objeto = serializador.deserializar(datos, Object.class);
-    if (objeto instanceof MensajeBroker mensaje) {
-      publicar(mensaje.tema(), mensaje.contenido());
+    if (objeto instanceof EventoBroker evento) {
+      publicar(evento.tema(), evento.contenido());
     }
   }
 
