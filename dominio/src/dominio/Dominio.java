@@ -227,6 +227,11 @@ public class Dominio implements IReceptorExterno {
       publicar(new EventoSincronizacion(estadoJuego()));
       return;
     }
+    if (jugador == null || jugador.isBlank()
+      || !contieneNombre(humanos, jugador)) {
+      publicar(new EventoError("El jugador no participa en la partida"));
+      return;
+    }
     List<String> nombres = new ArrayList<>();
     for (String humano : humanos) {
       if (nombres.size() >= JUGADORES) {
