@@ -51,6 +51,9 @@ public class Receptor implements ObservadorReceptor {
       return;
     }
     this.servidor.iniciar(puerto);
+    if (!this.servidor.estaActivo()) {
+      return;
+    }
     this.activo = true;
     this.hilo = new Thread(() -> {
       while (this.activo) {
