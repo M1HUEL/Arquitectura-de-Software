@@ -209,7 +209,7 @@ public class Dominio implements IReceptorExterno {
     } else if (contenido instanceof ComandoVictoria comando) {
       gritarVictoria(comando.jugador(), comando.patron());
     } else if (contenido instanceof ComandoCerrar) {
-      cerrarPartida();
+      finalizarPartida();
     } else {
       publicar(new EventoError("Comando desconocido: " + contenido.getClass().getSimpleName()));
     }
@@ -277,14 +277,14 @@ public class Dominio implements IReceptorExterno {
       return;
     }
     if (!partida.puedeCantar()) {
-      finalizarPorAgotamiento();
+      finalizarPartida();
       return;
     }
     Carta carta = partida.cantarSiguiente();
     marcarOponentes(carta);
     publicar(new EventoCartaCantada(estadoJuego()));
     if (!partida.puedeCantar()) {
-      finalizarPorAgotamiento();
+      finalizarPartida();
     }
   }
 
@@ -356,15 +356,7 @@ public class Dominio implements IReceptorExterno {
     }
   }
 
-  private void cerrarPartida() {
-    detenerTemporizador();
-    if (partida != null && partida.estaEnCurso()) {
-      partida.finalizar();
-    }
-    publicar(new EventoFin(estadoJuego()));
-  }
-
-  private void finalizarPorAgotamiento() {
+  private void finalizarPartida() {
     detenerTemporizador();
     if (partida != null && partida.estaEnCurso()) {
       partida.finalizar();
