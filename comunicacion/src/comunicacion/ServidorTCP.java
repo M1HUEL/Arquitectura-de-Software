@@ -55,7 +55,10 @@ public class ServidorTCP {
       this.hilo.setDaemon(true);
       this.hilo.start();
     } catch (IOException e) {
-      // ...
+      this.server = null;
+      throw new IllegalStateException(
+        "No se pudo iniciar el servidor TCP en el puerto " + puerto
+        + ": " + e.getMessage(), e);
     }
   }
 
