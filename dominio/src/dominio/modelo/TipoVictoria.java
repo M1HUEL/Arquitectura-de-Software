@@ -1,9 +1,9 @@
 package dominio.modelo;
 
 public enum TipoVictoria {
-  LINEA("Línea"),
-  CUADRO("Cuadro"),
+  CHORRO("Chorro"),
   CUATRO_ESQUINAS("Cuatro esquinas"),
+  CENTRO("Centro"),
   TABLA_LLENA("Tabla llena");
 
   private final String descripcion;

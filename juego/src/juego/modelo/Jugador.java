@@ -67,14 +67,12 @@ public class Jugador {
       return false;
     }
     return switch (patron) {
-      case LINEA ->
-        tieneLinea();
-      case COLUMNA ->
-        tieneColumna();
-      case DIAGONAL ->
-        tieneDiagonal();
+      case CHORRO ->
+        tieneLinea() || tieneColumna() || tieneDiagonal();
       case CUATRO_ESQUINAS ->
         tieneCuatroEsquinas();
+      case CENTRO ->
+        tieneCentro();
       case TABLA_LLENA ->
         tieneTablaLlena();
     };
@@ -131,6 +129,15 @@ public class Jugador {
       && estaSeleccionada(cartas.get(indice(0, COLUMNAS - 1)))
       && estaSeleccionada(cartas.get(indice(FILAS - 1, 0)))
       && estaSeleccionada(cartas.get(indice(FILAS - 1, COLUMNAS - 1)));
+  }
+
+  private boolean tieneCentro() {
+    int fila = FILAS / 2 - 1;
+    int columna = COLUMNAS / 2 - 1;
+    return estaSeleccionada(cartas.get(indice(fila, columna)))
+      && estaSeleccionada(cartas.get(indice(fila, columna + 1)))
+      && estaSeleccionada(cartas.get(indice(fila + 1, columna)))
+      && estaSeleccionada(cartas.get(indice(fila + 1, columna + 1)));
   }
 
   private boolean tieneTablaLlena() {

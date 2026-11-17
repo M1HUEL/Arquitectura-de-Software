@@ -56,7 +56,7 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
   private volatile EstadoPartida estadoPartida = EstadoPartida.NO_INICIADA;
   private volatile String ganador = "";
   private volatile String ultimoError = "";
-  private volatile Patron patron = Patron.LINEA;
+  private volatile Patron patron = Patron.CHORRO;
   private volatile boolean conectado;
 
   public FachadaBroker(

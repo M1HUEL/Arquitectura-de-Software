@@ -139,12 +139,12 @@ public final class Tabla {
   public boolean cumple(TipoVictoria tipoVictoria) {
     Objects.requireNonNull(tipoVictoria, "tipoVictoria");
     return switch (tipoVictoria) {
-      case LINEA ->
+      case CHORRO ->
         tieneLinea();
-      case CUADRO ->
-        tieneCuadro();
       case CUATRO_ESQUINAS ->
         tieneCuatroEsquinas();
+      case CENTRO ->
+        tieneCentro();
       case TABLA_LLENA ->
         tieneTablaLlena();
     };
@@ -188,18 +188,13 @@ public final class Tabla {
     return diagonal || diagonalInversa;
   }
 
-  public boolean tieneCuadro() {
-    for (int fila = 0; fila < FILAS - 1; fila++) {
-      for (int columna = 0; columna < COLUMNAS - 1; columna++) {
-        if (casillas[fila][columna].estaMarcada()
-          && casillas[fila][columna + 1].estaMarcada()
-          && casillas[fila + 1][columna].estaMarcada()
-          && casillas[fila + 1][columna + 1].estaMarcada()) {
-          return true;
-        }
-      }
-    }
-    return false;
+  public boolean tieneCentro() {
+    int fila = FILAS / 2 - 1;
+    int columna = COLUMNAS / 2 - 1;
+    return casillas[fila][columna].estaMarcada()
+      && casillas[fila][columna + 1].estaMarcada()
+      && casillas[fila + 1][columna].estaMarcada()
+      && casillas[fila + 1][columna + 1].estaMarcada();
   }
 
   public boolean tieneCuatroEsquinas() {

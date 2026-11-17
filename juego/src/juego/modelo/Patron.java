@@ -1,9 +1,8 @@
 package juego.modelo;
 
 public enum Patron {
-  LINEA,
-  COLUMNA,
-  DIAGONAL,
+  CHORRO,
   CUATRO_ESQUINAS,
+  CENTRO,
   TABLA_LLENA
 }

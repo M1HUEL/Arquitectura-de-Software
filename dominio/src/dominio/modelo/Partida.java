@@ -65,7 +65,7 @@ public final class Partida {
   }
 
   public static Partida crear(List<String> nombresJugadores, Random aleatorio) {
-    return crear(nombresJugadores, TipoVictoria.LINEA, aleatorio);
+    return crear(nombresJugadores, TipoVictoria.CHORRO, aleatorio);
   }
 
   public void iniciar() {

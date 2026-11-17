@@ -50,7 +50,7 @@ public class FachadaJuego implements Fachada {
     this.oyentes = new CopyOnWriteArrayList<>();
     this.estadoPartida = EstadoPartida.NO_INICIADA;
     this.ganador = "";
-    this.patron = Patron.LINEA;
+    this.patron = Patron.CHORRO;
     this.temporizador = new Timer(RETARDO_CANTADA, evento -> cantarSiguiente());
     this.finalizador = new Timer(TIEMPO_FINAL, evento -> finalizarPorAgotamiento());
     this.finalizador.setRepeats(false);

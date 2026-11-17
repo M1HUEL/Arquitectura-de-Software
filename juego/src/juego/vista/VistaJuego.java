@@ -37,7 +37,7 @@ public class VistaJuego extends JFrame implements Observador {
   private final JPanel panelTableros;
   private final DefaultListModel<String> modeloListaJugadores;
   private final JList<String> listaJugadores;
-  private Patron patronSeleccionado = Patron.LINEA;
+  private Patron patronSeleccionado = Patron.CHORRO;
   private long versionMensajeMostrado = -1;
 
   public VistaJuego(Modelo modelo, ControladorJuego controlador) {

@@ -47,7 +47,7 @@ public final class Main {
     Random generador = new Random(2026L);
     Partida partida = Partida.crear(
       List.of("Ana", "Luis", "Sofía"),
-      TipoVictoria.LINEA,
+      TipoVictoria.CHORRO,
       generador
     );
     partida.iniciar();
@@ -130,7 +130,7 @@ public final class Main {
     Tabla fila = tablaDesde(1);
     marcar(fila, 1, 2, 3, 4);
     afirmar(fila.tieneLinea(), "Cuatro cartas de una fila deben formar línea");
-    afirmar(fila.cumple(TipoVictoria.LINEA), "La tabla debe cumplir la victoria por línea");
+    afirmar(fila.cumple(TipoVictoria.CHORRO), "La tabla debe cumplir la victoria por línea");
 
     Tabla columna = tablaDesde(1);
     marcar(columna, 1, 5, 9, 13);
@@ -144,10 +144,10 @@ public final class Main {
     marcar(diagonalInversa, 4, 7, 10, 13);
     afirmar(diagonalInversa.tieneLinea(), "La diagonal inversa debe formar línea");
 
-    Tabla cuadro = tablaDesde(1);
-    marcar(cuadro, 1, 2, 5, 6);
-    afirmar(cuadro.tieneCuadro(), "Un bloque de 2x2 debe formar cuadro");
-    afirmar(cuadro.cumple(TipoVictoria.CUADRO), "La tabla debe cumplir la victoria por cuadro");
+    Tabla centro = tablaDesde(1);
+    marcar(centro, 6, 7, 10, 11);
+    afirmar(centro.tieneCentro(), "El bloque central de 2x2 debe formar centro");
+    afirmar(centro.cumple(TipoVictoria.CENTRO), "La tabla debe cumplir la victoria por centro");
 
     Tabla esquinas = tablaDesde(1);
     marcar(esquinas, 1, 4, 13, 16);
@@ -289,7 +289,7 @@ public final class Main {
 
   private static void verificarPartida() {
     Random generador = new Random(42L);
-    Partida partida = Partida.crear(List.of("Ana", "Luis"), TipoVictoria.LINEA, generador);
+    Partida partida = Partida.crear(List.of("Ana", "Luis"), TipoVictoria.CHORRO, generador);
     afirmar(partida.obtenerEstado() == EstadoPartida.CREADA, "La partida debe iniciar creada");
     afirmar(partida.obtenerJugadores().size() == 2, "La partida debe tener dos jugadores");
     afirmar(partida.obtenerCartasRestantes().size() == 54, "La partida debe iniciar con 54 cartas");
@@ -359,7 +359,7 @@ public final class Main {
         new Baraja(List.of(carta(4), carta(3), carta(2), carta(1))),
         new Random(1L)
       ),
-      TipoVictoria.LINEA
+      TipoVictoria.CHORRO
     );
     victoria.iniciar();
     for (int id = 1; id <= 4; id++) {
@@ -408,7 +408,7 @@ public final class Main {
       "partida-sin-cartas",
       List.of(new Jugador("Ana", tablaDesde(1))),
       new Griton(new Baraja(List.of(carta(1))), new Random(1L)),
-      TipoVictoria.LINEA
+      TipoVictoria.CHORRO
     );
     sinCartas.iniciar();
     sinCartas.cantarSiguiente();
@@ -443,8 +443,8 @@ public final class Main {
   }
 
   private static void verificarDeterminismo() {
-    Partida primera = Partida.crear(List.of("Ana", "Luis"), TipoVictoria.LINEA, new Random(123L));
-    Partida segunda = Partida.crear(List.of("Ana", "Luis"), TipoVictoria.LINEA, new Random(123L));
+    Partida primera = Partida.crear(List.of("Ana", "Luis"), TipoVictoria.CHORRO, new Random(123L));
+    Partida segunda = Partida.crear(List.of("Ana", "Luis"), TipoVictoria.CHORRO, new Random(123L));
     for (int i = 0; i < primera.obtenerJugadores().size(); i++) {
       List<Carta> tablaPrimera = primera.obtenerJugadores().get(i).obtenerTabla().obtenerCartas();
       List<Carta> tablaSegunda = segunda.obtenerJugadores().get(i).obtenerTabla().obtenerCartas();

@@ -34,7 +34,7 @@ import serializador.ISerializador;
 public class Dominio implements IReceptorExterno {
 
   private static final long INTERVALO_POR_DEFECTO = 3000L;
-  private static final String PATRON_POR_DEFECTO = "LINEA";
+  private static final String PATRON_POR_DEFECTO = "CHORRO";
   private static final int JUGADORES = 3;
 
   private final ISerializador serializador;
@@ -240,7 +240,7 @@ public class Dominio implements IReceptorExterno {
         nombres.add(nombre);
       }
     }
-    partida = Partida.crear(nombres, TipoVictoria.LINEA, aleatorio);
+    partida = Partida.crear(nombres, TipoVictoria.CHORRO, aleatorio);
     partida.iniciar();
     patronActual = PATRON_POR_DEFECTO;
     detenerTemporizador();
@@ -367,15 +367,17 @@ public class Dominio implements IReceptorExterno {
 
   private TipoVictoria convertirTipoVictoria(String patron) {
     if (patron == null) {
-      return TipoVictoria.LINEA;
+      return TipoVictoria.CHORRO;
     }
     return switch (patron.trim().toUpperCase(Locale.ROOT)) {
       case "CUATRO_ESQUINAS" ->
         TipoVictoria.CUATRO_ESQUINAS;
+      case "CENTRO" ->
+        TipoVictoria.CENTRO;
       case "TABLA_LLENA" ->
         TipoVictoria.TABLA_LLENA;
       default ->
-        TipoVictoria.LINEA;
+        TipoVictoria.CHORRO;
     };
   }
 
