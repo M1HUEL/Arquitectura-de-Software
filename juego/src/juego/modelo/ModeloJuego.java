@@ -42,6 +42,14 @@ public class ModeloJuego implements Modelo {
     fachada.cerrar();
   }
 
+  public void desconectar() {
+    if (conectado) {
+      fachada.eliminarOyente(oyente);
+      conectado = false;
+    }
+    fachada.desconectar();
+  }
+
   public void seleccionarCasilla(Carta carta, Jugador jugador) {
     notificarObservadores(fachada.seleccionarCasilla(jugador, carta));
   }

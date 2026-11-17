@@ -117,8 +117,16 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
   public void cerrar() {
     if (conectado) {
       enviar(new ComandoCerrar(jugadorLocal));
-      conectado = false;
     }
+    desconectar();
+  }
+
+  @Override
+  public void desconectar() {
+    if (!conectado) {
+      return;
+    }
+    conectado = false;
     receptor.detener();
     dispatcher.detener();
   }

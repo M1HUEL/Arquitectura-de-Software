@@ -1,5 +1,7 @@
 package juego;
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import javax.swing.SwingUtilities;
 import juego.controlador.ControladorJuego;
 import juego.fachada.Fachada;
@@ -17,6 +19,12 @@ public class Main {
       ModeloJuego modelo = new ModeloJuego(jugadorLocal, fachada);
       ControladorJuego controlador = new ControladorJuego(modelo);
       VistaJuego vista = new VistaJuego(modelo, controlador);
+      vista.addWindowListener(new WindowAdapter() {
+        @Override
+        public void windowClosed(WindowEvent evento) {
+          System.exit(0);
+        }
+      });
       modelo.agregarObservador(vista);
       vista.setVisible(true);
       modelo.iniciar();

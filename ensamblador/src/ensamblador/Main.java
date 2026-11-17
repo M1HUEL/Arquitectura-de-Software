@@ -7,7 +7,10 @@ import comunicacion.Receptor;
 import dominio.Dominio;
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.SwingUtilities;
 import juego.controlador.ControladorJuego;
 import juego.fachada.FachadaBroker;
@@ -69,8 +72,8 @@ public class Main {
     }
 
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      fachadaUno.cerrar();
-      fachadaDos.cerrar();
+      fachadaUno.desconectar();
+      fachadaDos.desconectar();
       dominio.detener();
       broker.detener();
     }));
@@ -80,9 +83,20 @@ public class Main {
     System.out.println("MVC " + JUGADOR_UNO + ": " + HOST + ":" + puertoMvc);
     System.out.println("MVC " + JUGADOR_DOS + ": " + HOST + ":" + (puertoMvc + 1));
 
+    AtomicInteger ventanasAbiertas = new AtomicInteger(2);
+    Runnable alCerrarVentana = () -> {
+      if (ventanasAbiertas.decrementAndGet() == 0) {
+        fachadaUno.desconectar();
+        fachadaDos.desconectar();
+        dominio.detener();
+        broker.detener();
+        System.exit(0);
+      }
+    };
+
     SwingUtilities.invokeLater(() -> {
-      VistaJuego vistaUno = crearCliente(JUGADOR_UNO, fachadaUno);
-      VistaJuego vistaDos = crearCliente(JUGADOR_DOS, fachadaDos);
+      VistaJuego vistaUno = crearCliente(JUGADOR_UNO, fachadaUno, alCerrarVentana);
+      VistaJuego vistaDos = crearCliente(JUGADOR_DOS, fachadaDos, alCerrarVentana);
       ubicar(vistaUno, 0, 2);
       ubicar(vistaDos, 1, 2);
       vistaUno.setVisible(true);
@@ -92,10 +106,17 @@ public class Main {
     Thread.currentThread().join();
   }
 
-  private static VistaJuego crearCliente(String jugador, FachadaBroker fachada) {
+  private static VistaJuego crearCliente(
+    String jugador, FachadaBroker fachada, Runnable alCerrarVentana) {
     ModeloJuego modelo = new ModeloJuego(jugador, fachada);
     ControladorJuego controlador = new ControladorJuego(modelo);
     VistaJuego vista = new VistaJuego(modelo, controlador);
+    vista.addWindowListener(new WindowAdapter() {
+      @Override
+      public void windowClosed(WindowEvent evento) {
+        alCerrarVentana.run();
+      }
+    });
     modelo.agregarObservador(vista);
     modelo.iniciar();
     return vista;

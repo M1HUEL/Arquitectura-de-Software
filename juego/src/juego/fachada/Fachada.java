@@ -13,6 +13,10 @@ public interface Fachada {
 
   void cerrar();
 
+  default void desconectar() {
+    cerrar();
+  }
+
   void agregarOyente(Runnable oyente);
 
   void eliminarOyente(Runnable oyente);

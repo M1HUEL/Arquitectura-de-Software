@@ -3,6 +3,8 @@ package juego.vista;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
@@ -45,7 +47,7 @@ public class VistaJuego extends JFrame implements Observador {
     this.controlador = controlador;
 
     setTitle("Lotería - " + modelo.obtenerJugadorLocal());
-    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     setSize(1200, 700);
     setLocationRelativeTo(null);
 
@@ -81,10 +83,23 @@ public class VistaJuego extends JFrame implements Observador {
       }
     });
 
+    JButton botonCerrarPartida = new JButton("Cerrar partida");
+    botonCerrarPartida.addActionListener(evento -> {
+      modelo.cerrar();
+      dispose();
+    });
+
     JButton botonSalir = new JButton("Salir de la partida");
     botonSalir.addActionListener(evento -> {
+      modelo.desconectar();
       dispose();
-      System.exit(0);
+    });
+
+    addWindowListener(new WindowAdapter() {
+      @Override
+      public void windowClosed(WindowEvent evento) {
+        modelo.desconectar();
+      }
     });
 
     JPanel seccionInformacion = new JPanel(new GridLayout(4, 1));
@@ -107,11 +122,15 @@ public class VistaJuego extends JFrame implements Observador {
     panelCentroLateral.add(seccionPatron, BorderLayout.NORTH);
     panelCentroLateral.add(seccionJugadores, BorderLayout.CENTER);
 
+    JPanel panelBotones = new JPanel(new GridLayout(2, 1, 0, 4));
+    panelBotones.add(botonCerrarPartida);
+    panelBotones.add(botonSalir);
+
     JPanel panelLateral = new JPanel(new BorderLayout(0, 8));
     panelLateral.setPreferredSize(new Dimension(320, 0));
     panelLateral.add(seccionInformacion, BorderLayout.NORTH);
     panelLateral.add(panelCentroLateral, BorderLayout.CENTER);
-    panelLateral.add(botonSalir, BorderLayout.SOUTH);
+    panelLateral.add(panelBotones, BorderLayout.SOUTH);
 
     add(new JScrollPane(panelTableros), BorderLayout.CENTER);
     add(panelLateral, BorderLayout.EAST);
