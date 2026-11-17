@@ -165,7 +165,12 @@ public class Dominio implements IReceptorExterno {
       return;
     }
     dispatcher.iniciar();
-    receptor.iniciar(puertoLocal);
+    try {
+      receptor.iniciar(puertoLocal);
+    } catch (RuntimeException e) {
+      dispatcher.detener();
+      throw e;
+    }
     if (!receptor.estaActivo()) {
       dispatcher.detener();
       throw new IllegalStateException(
