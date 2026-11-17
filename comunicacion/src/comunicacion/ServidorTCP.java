@@ -118,10 +118,10 @@ public class ServidorTCP {
         lector.setDaemon(true);
         lector.start();
       } catch (IOException e) {
-        if (this.activo) {
-          System.err.println("Error en el servidor TCP: " + e.getMessage());
+        if (!this.activo || this.server == null || this.server.isClosed()) {
+          return;
         }
-        this.activo = false;
+        System.err.println("Error en el servidor TCP: " + e.getMessage());
       }
     }
   }
