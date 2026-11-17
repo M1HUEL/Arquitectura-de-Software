@@ -195,14 +195,11 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
 
   @Override
   public Mensaje seleccionarPatron(Jugador jugador, Patron patron) {
-    if (patron == null) {
+    if (patron == null || !puedeJugar(jugador) || !jugador.cumple(patron)) {
       return Mensaje.PATRON_INVALIDO;
     }
     this.patron = patron;
     enviar(new ComandoPatron(jugadorLocal, patron.name()));
-    if (!puedeJugar(jugador) || !jugador.cumple(patron)) {
-      return Mensaje.PATRON_INVALIDO;
-    }
     return Mensaje.PATRON_VALIDO;
   }
 
