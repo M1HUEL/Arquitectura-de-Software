@@ -5,6 +5,9 @@ import comunicacion.Dispatcher;
 import comunicacion.DispatcherFactory;
 import comunicacion.Receptor;
 import dominio.Dominio;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.util.List;
 import javax.swing.SwingUtilities;
 import juego.controlador.ControladorJuego;
 import juego.fachada.FachadaBroker;
@@ -21,7 +24,8 @@ public class Main {
   private static final int PUERTO_MVC = 7002;
   private static final String TEMA_COMANDOS = "dominio";
   private static final String TEMA_EVENTOS = "juego";
-  private static final String JUGADOR_LOCAL = "Jugador";
+  private static final String JUGADOR_UNO = "Jugador 1";
+  private static final String JUGADOR_DOS = "Jugador 2";
   private static final long INTERVALO_CARTAS = 3000L;
 
   public static void main(String[] args) throws InterruptedException {
@@ -41,44 +45,67 @@ public class Main {
       puertoBroker,
       TEMA_COMANDOS,
       TEMA_EVENTOS,
-      JUGADOR_LOCAL,
+      List.of(JUGADOR_UNO, JUGADOR_DOS),
       intervalo
     );
-    FachadaBroker fachada = new FachadaBroker(
-      JUGADOR_LOCAL, HOST, puertoBroker, TEMA_COMANDOS, TEMA_EVENTOS, puertoMvc);
+    FachadaBroker fachadaUno = new FachadaBroker(
+      JUGADOR_UNO, HOST, puertoBroker, TEMA_COMANDOS, TEMA_EVENTOS, puertoMvc);
+    FachadaBroker fachadaDos = new FachadaBroker(
+      JUGADOR_DOS, HOST, puertoBroker, TEMA_COMANDOS, TEMA_EVENTOS, puertoMvc + 1);
 
     try {
       broker.suscribir(TEMA_COMANDOS, HOST, puertoDominio);
       broker.suscribir(TEMA_EVENTOS, HOST, puertoMvc);
+      broker.suscribir(TEMA_EVENTOS, HOST, puertoMvc + 1);
       broker.iniciar(puertoBroker);
       dominio.iniciar(puertoDominio);
     } catch (RuntimeException e) {
       System.err.println("No se pudo iniciar la aplicación: " + e.getMessage());
-      fachada.cerrar();
+      fachadaUno.cerrar();
+      fachadaDos.cerrar();
       dominio.detener();
       broker.detener();
       return;
     }
 
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      fachada.cerrar();
+      fachadaUno.cerrar();
+      fachadaDos.cerrar();
       dominio.detener();
       broker.detener();
     }));
 
     System.out.println("Broker: " + HOST + ":" + broker.obtenerPuerto());
     System.out.println("Dominio: " + HOST + ":" + puertoDominio);
-    System.out.println("MVC: " + HOST + ":" + puertoMvc);
+    System.out.println("MVC " + JUGADOR_UNO + ": " + HOST + ":" + puertoMvc);
+    System.out.println("MVC " + JUGADOR_DOS + ": " + HOST + ":" + (puertoMvc + 1));
 
     SwingUtilities.invokeLater(() -> {
-      ModeloJuego modelo = new ModeloJuego(JUGADOR_LOCAL, fachada);
-      ControladorJuego controlador = new ControladorJuego(modelo);
-      VistaJuego vista = new VistaJuego(modelo, controlador);
-      modelo.agregarObservador(vista);
-      vista.setVisible(true);
-      modelo.iniciar();
+      VistaJuego vistaUno = crearCliente(JUGADOR_UNO, fachadaUno);
+      VistaJuego vistaDos = crearCliente(JUGADOR_DOS, fachadaDos);
+      ubicar(vistaUno, 0, 2);
+      ubicar(vistaDos, 1, 2);
+      vistaUno.setVisible(true);
+      vistaDos.setVisible(true);
     });
 
     Thread.currentThread().join();
+  }
+
+  private static VistaJuego crearCliente(String jugador, FachadaBroker fachada) {
+    ModeloJuego modelo = new ModeloJuego(jugador, fachada);
+    ControladorJuego controlador = new ControladorJuego(modelo);
+    VistaJuego vista = new VistaJuego(modelo, controlador);
+    modelo.agregarObservador(vista);
+    modelo.iniciar();
+    return vista;
+  }
+
+  private static void ubicar(VistaJuego vista, int indice, int total) {
+    Dimension pantalla = Toolkit.getDefaultToolkit().getScreenSize();
+    int ancho = Math.max(480, pantalla.width / total);
+    int alto = Math.min(700, pantalla.height);
+    vista.setSize(ancho, alto);
+    vista.setLocation(indice * ancho, 0);
   }
 }

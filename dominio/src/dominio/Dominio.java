@@ -44,13 +44,12 @@ public class Dominio implements IReceptorExterno {
   private final int puertoBroker;
   private final String temaComandos;
   private final String temaEventos;
-  private final String jugadorLocal;
   private final long intervaloMs;
   private final Random aleatorio;
+  private final List<String> humanos = new ArrayList<>();
   private final Object candado = new Object();
 
   private Partida partida;
-  private String jugadorPrincipal;
   private String patronActual = PATRON_POR_DEFECTO;
   private Timer temporizador;
   private boolean activo;
@@ -67,7 +66,7 @@ public class Dominio implements IReceptorExterno {
     long intervaloMs
   ) {
     this(serializador, dispatcher, receptor, hostBroker, puertoBroker, temaComandos,
-      temaEventos, jugadorLocal, intervaloMs, new Random().nextLong());
+      temaEventos, List.of(jugadorLocal), intervaloMs);
   }
 
   public Dominio(
@@ -79,6 +78,37 @@ public class Dominio implements IReceptorExterno {
     String temaComandos,
     String temaEventos,
     String jugadorLocal,
+    long intervaloMs,
+    long semilla
+  ) {
+    this(serializador, dispatcher, receptor, hostBroker, puertoBroker, temaComandos,
+      temaEventos, List.of(jugadorLocal), intervaloMs, semilla);
+  }
+
+  public Dominio(
+    ISerializador serializador,
+    Dispatcher dispatcher,
+    Receptor receptor,
+    String hostBroker,
+    int puertoBroker,
+    String temaComandos,
+    String temaEventos,
+    List<String> jugadoresHumanos,
+    long intervaloMs
+  ) {
+    this(serializador, dispatcher, receptor, hostBroker, puertoBroker, temaComandos,
+      temaEventos, jugadoresHumanos, intervaloMs, new Random().nextLong());
+  }
+
+  public Dominio(
+    ISerializador serializador,
+    Dispatcher dispatcher,
+    Receptor receptor,
+    String hostBroker,
+    int puertoBroker,
+    String temaComandos,
+    String temaEventos,
+    List<String> jugadoresHumanos,
     long intervaloMs,
     long semilla
   ) {
@@ -103,8 +133,17 @@ public class Dominio implements IReceptorExterno {
     if (temaEventos == null || temaEventos.isBlank()) {
       throw new IllegalArgumentException("El tema de eventos no puede estar vacío");
     }
-    if (jugadorLocal == null || jugadorLocal.isBlank()) {
-      throw new IllegalArgumentException("El jugador local no puede estar vacío");
+    if (jugadoresHumanos == null || jugadoresHumanos.isEmpty()) {
+      throw new IllegalArgumentException("Debe haber al menos un jugador humano");
+    }
+    for (String nombre : jugadoresHumanos) {
+      if (nombre == null || nombre.isBlank()) {
+        throw new IllegalArgumentException("El nombre de un jugador no puede estar vacío");
+      }
+      String limpio = nombre.trim();
+      if (!contieneNombre(this.humanos, limpio)) {
+        this.humanos.add(limpio);
+      }
     }
     this.serializador = serializador;
     this.dispatcher = dispatcher;
@@ -113,8 +152,6 @@ public class Dominio implements IReceptorExterno {
     this.puertoBroker = puertoBroker;
     this.temaComandos = temaComandos.trim();
     this.temaEventos = temaEventos.trim();
-    this.jugadorLocal = jugadorLocal.trim();
-    this.jugadorPrincipal = this.jugadorLocal;
     this.intervaloMs = intervaloMs > 0 ? intervaloMs : INTERVALO_POR_DEFECTO;
     this.aleatorio = new Random(semilla);
     this.receptor.agregarReceptor(this);
@@ -190,21 +227,16 @@ public class Dominio implements IReceptorExterno {
       publicar(new EventoSincronizacion(estadoJuego()));
       return;
     }
-    if (jugador != null && !jugador.isBlank()) {
-      jugadorPrincipal = jugador.trim();
-    }
     List<String> nombres = new ArrayList<>();
-    nombres.add(jugadorPrincipal);
+    for (String humano : humanos) {
+      if (nombres.size() >= JUGADORES) {
+        break;
+      }
+      nombres.add(humano);
+    }
     for (int i = 1; nombres.size() < JUGADORES; i++) {
       String nombre = "Oponente " + i;
-      boolean repetido = false;
-      for (String existente : nombres) {
-        if (existente.equalsIgnoreCase(nombre)) {
-          repetido = true;
-          break;
-        }
-      }
-      if (!repetido) {
+      if (!contieneNombre(nombres, nombre)) {
         nombres.add(nombre);
       }
     }
@@ -248,7 +280,7 @@ public class Dominio implements IReceptorExterno {
 
   private void marcarOponentes(Carta carta) {
     for (Jugador jugador : partida.obtenerJugadores()) {
-      if (jugador.obtenerNombre().equals(jugadorPrincipal)) {
+      if (contieneNombre(humanos, jugador.obtenerNombre())) {
         continue;
       }
       if (!jugador.obtenerTabla().contiene(carta)) {
@@ -356,6 +388,19 @@ public class Dominio implements IReceptorExterno {
       }
     }
     return null;
+  }
+
+  private boolean contieneNombre(List<String> nombres, String nombre) {
+    if (nombres == null || nombre == null) {
+      return false;
+    }
+    String buscado = nombre.trim();
+    for (String existente : nombres) {
+      if (existente.equalsIgnoreCase(buscado)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private void publicar(Object evento) {
