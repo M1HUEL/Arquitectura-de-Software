@@ -323,7 +323,7 @@ public class Dominio implements IReceptorExterno {
       }
       publicar(new EventoSincronizacion(estadoJuego()));
     } catch (RuntimeException e) {
-      publicar(new EventoError(e.getMessage()));
+      publicarError(e);
     }
   }
 
@@ -352,7 +352,7 @@ public class Dominio implements IReceptorExterno {
       detenerTemporizador();
       publicar(new EventoVictoria(estadoJuego()));
     } catch (RuntimeException e) {
-      publicar(new EventoError(e.getMessage()));
+      publicarError(e);
     }
   }
 
@@ -407,6 +407,12 @@ public class Dominio implements IReceptorExterno {
       }
     }
     return false;
+  }
+
+  private void publicarError(RuntimeException e) {
+    String mensaje = e.getMessage();
+    publicar(new EventoError(mensaje == null || mensaje.isBlank()
+      ? "Error inesperado del dominio" : mensaje));
   }
 
   private void publicar(Object evento) {
