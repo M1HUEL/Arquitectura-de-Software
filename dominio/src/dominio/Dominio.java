@@ -404,6 +404,9 @@ public class Dominio implements IReceptorExterno {
   }
 
   private void publicar(Object evento) {
+    if (!dispatcher.estaActivo()) {
+      return;
+    }
     byte[] datos = serializador.serializar(new EventoBroker(temaEventos, evento));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
   }

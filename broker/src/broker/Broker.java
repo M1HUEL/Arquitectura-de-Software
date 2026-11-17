@@ -63,6 +63,9 @@ public class Broker implements IReceptorExterno {
   }
 
   public void publicar(String tema, Object contenido) {
+    if (!dispatcher.estaActivo()) {
+      return;
+    }
     List<GestorSuscriptores.Suscriptor> suscriptores = gestor.obtener(tema);
     if (suscriptores.isEmpty()) {
       return;
