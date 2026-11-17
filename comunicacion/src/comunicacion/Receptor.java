@@ -54,6 +54,7 @@ public class Receptor implements ObservadorReceptor {
     if (!this.servidor.estaActivo()) {
       return;
     }
+    this.cola.clear();
     this.activo = true;
     this.hilo = new Thread(() -> {
       while (this.activo) {
