@@ -168,7 +168,6 @@ public class FachadaJuego implements Fachada {
     this.estadoPartida = EstadoPartida.TERMINADA;
     this.temporizador.stop();
     this.finalizador.stop();
-    jugador.agregarPuntos(10);
     return Mensaje.VICTORIA_VALIDA;
   }
 
