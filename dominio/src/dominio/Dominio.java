@@ -371,19 +371,14 @@ public class Dominio implements IReceptorExterno {
   }
 
   private TipoVictoria convertirTipoVictoria(String patron) {
-    if (patron == null) {
+    if (patron == null || patron.isBlank()) {
       return TipoVictoria.CHORRO;
     }
-    return switch (patron.trim().toUpperCase(Locale.ROOT)) {
-      case "CUATRO_ESQUINAS" ->
-        TipoVictoria.CUATRO_ESQUINAS;
-      case "CENTRO" ->
-        TipoVictoria.CENTRO;
-      case "TABLA_LLENA" ->
-        TipoVictoria.TABLA_LLENA;
-      default ->
-        TipoVictoria.CHORRO;
-    };
+    try {
+      return TipoVictoria.valueOf(patron.trim().toUpperCase(Locale.ROOT));
+    } catch (IllegalArgumentException e) {
+      return TipoVictoria.CHORRO;
+    }
   }
 
   private Jugador buscarJugador(String nombre) {
