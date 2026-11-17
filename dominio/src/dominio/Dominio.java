@@ -206,7 +206,7 @@ public class Dominio implements IReceptorExterno {
     } else if (contenido instanceof ComandoCerrar) {
       cerrarPartida();
     } else {
-      publicar(new EventoError("Comando desconocido: " + contenido));
+      publicar(new EventoError("Comando desconocido: " + contenido.getClass().getSimpleName()));
     }
   }
 
