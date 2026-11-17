@@ -35,13 +35,14 @@ public class Dispatcher implements IDispatcher {
       try {
         observador.alEnviar(sobre.host(), sobre.puerto(), sobre.datos());
       } catch (IOException e) {
-        // ...
+        System.err.println("No se pudo enviar a " + sobre.host() + ":" + sobre.puerto()
+          + ": " + e.getMessage());
       }
     }
   }
 
   @Override
-  public void enviar(String host, int puerto, byte[] datos) {
+  public synchronized void enviar(String host, int puerto, byte[] datos) {
     if (!this.activo) {
       throw new IllegalStateException("El dispatcher no está activo. Llama a iniciar() primero.");
     }
@@ -73,10 +74,23 @@ public class Dispatcher implements IDispatcher {
     this.hilo.start();
   }
 
-  public void detener() {
+  public synchronized void detener() {
+    if (!this.activo) {
+      return;
+    }
     this.activo = false;
+    Sobre pendiente;
+    while ((pendiente = this.cola.poll()) != null) {
+      notificarObservadores(pendiente);
+    }
     if (this.hilo != null) {
       this.hilo.interrupt();
+      try {
+        this.hilo.join(2000);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      this.hilo = null;
     }
   }
 
