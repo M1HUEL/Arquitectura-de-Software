@@ -323,9 +323,7 @@ public class Dominio implements IReceptorExterno {
   }
 
   private void cambiarPatron(String patron) {
-    if (patron != null && !patron.isBlank()) {
-      patronActual = patron.trim().toUpperCase(Locale.ROOT);
-    }
+    patronActual = convertirTipoVictoria(patron).name();
     publicar(new EventoSincronizacion(estadoJuego()));
   }
 
@@ -340,13 +338,12 @@ public class Dominio implements IReceptorExterno {
       return;
     }
     try {
-      if (!partida.gritarLoteria(jugador, convertirTipoVictoria(patron))) {
+      TipoVictoria tipo = convertirTipoVictoria(patron);
+      if (!partida.gritarLoteria(jugador, tipo)) {
         publicar(new EventoError("La victoria no es válida"));
         return;
       }
-      if (patron != null && !patron.isBlank()) {
-        patronActual = patron.trim().toUpperCase(Locale.ROOT);
-      }
+      patronActual = tipo.name();
       detenerTemporizador();
       publicar(new EventoVictoria(estadoJuego()));
     } catch (RuntimeException e) {
