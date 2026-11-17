@@ -417,8 +417,8 @@ public class Dominio implements IReceptorExterno {
 
   private EstadoJuego estadoJuego() {
     if (partida == null) {
-      return new EstadoJuego("", "", patronActual, new ArrayList<>(),
-        new ArrayList<>(), 0, "");
+      return new EstadoJuego("", "", patronActual, List.of(),
+        List.of(), 0, "");
     }
     List<JugadorMensaje> jugadores = new ArrayList<>();
     for (Jugador jugador : partida.obtenerJugadores()) {
