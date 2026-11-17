@@ -16,6 +16,8 @@ public interface Modelo {
 
   String obtenerGanador();
 
+  String obtenerUltimoError();
+
   Mensaje obtenerMensaje();
 
   long obtenerVersionMensaje();

@@ -111,6 +111,11 @@ public class ModeloJuego implements Modelo {
   }
 
   @Override
+  public String obtenerUltimoError() {
+    return fachada.obtenerUltimoError();
+  }
+
+  @Override
   public Mensaje obtenerMensaje() {
     return mensaje;
   }

@@ -124,6 +124,11 @@ public class FachadaJuego implements Fachada {
   }
 
   @Override
+  public String obtenerUltimoError() {
+    return "";
+  }
+
+  @Override
   public Mensaje seleccionarCasilla(Jugador jugador, Carta carta) {
     if (!puedeJugar(jugador) || carta == null) {
       return Mensaje.CASILLA_INVALIDA;

@@ -9,6 +9,7 @@ import comun.ComandoVictoria;
 import comun.EstadoJuego;
 import comun.EventoBroker;
 import comun.EventoCartaCantada;
+import comun.EventoError;
 import comun.EventoFin;
 import comun.EventoSincronizacion;
 import comun.EventoVictoria;
@@ -54,6 +55,7 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
   private volatile int restantes;
   private volatile EstadoPartida estadoPartida = EstadoPartida.NO_INICIADA;
   private volatile String ganador = "";
+  private volatile String ultimoError = "";
   private volatile Patron patron = Patron.LINEA;
   private volatile boolean conectado;
 
@@ -169,6 +171,11 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
   }
 
   @Override
+  public String obtenerUltimoError() {
+    return ultimoError;
+  }
+
+  @Override
   public Mensaje seleccionarCasilla(Jugador jugador, Carta carta) {
     if (!puedeJugar(jugador) || carta == null) {
       return Mensaje.CASILLA_INVALIDA;
@@ -220,11 +227,14 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
       actualizar(evento.estado());
     } else if (contenido instanceof EventoFin evento) {
       actualizar(evento.estado());
+    } else if (contenido instanceof EventoError evento) {
+      ultimoError = evento.mensaje() == null ? "" : evento.mensaje();
     }
     notificarOyentes();
   }
 
   private void actualizar(EstadoJuego estado) {
+    ultimoError = "";
     estadoPartida = convertirEstado(estado.estado());
     if (estado.patron() != null && !estado.patron().isBlank()) {
       try {

@@ -152,6 +152,10 @@ public class VistaJuego extends JFrame implements Observador {
       textoEstado += ganador == null || ganador.isBlank()
         ? " - Empate" : " - Ganador: " + ganador;
     }
+    String ultimoError = this.modelo.obtenerUltimoError();
+    if (ultimoError != null && !ultimoError.isBlank()) {
+      textoEstado += " - " + ultimoError;
+    }
     etiquetaEstado.setText(textoEstado);
 
     List<Jugador> jugadores = ordenarJugadores();

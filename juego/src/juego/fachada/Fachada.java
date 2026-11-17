@@ -31,6 +31,8 @@ public interface Fachada {
 
   Patron obtenerPatron();
 
+  String obtenerUltimoError();
+
   Mensaje seleccionarCasilla(Jugador jugador, Carta carta);
 
   Mensaje seleccionarPatron(Jugador jugador, Patron patron);
