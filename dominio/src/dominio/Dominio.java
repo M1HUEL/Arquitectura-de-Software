@@ -288,7 +288,9 @@ public class Dominio implements IReceptorExterno {
       }
       try {
         partida.marcar(jugador, carta);
-      } catch (RuntimeException ignored) {
+      } catch (RuntimeException e) {
+        System.err.println("No se pudo marcar al oponente " + jugador.obtenerNombre()
+          + ": " + e.getMessage());
       }
     }
   }
