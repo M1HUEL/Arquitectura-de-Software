@@ -11,14 +11,14 @@ public class ModeloJuego implements Modelo {
   private final Fachada fachada;
   private final List<Observador> observadores = new CopyOnWriteArrayList<>();
 
-  private volatile List<Jugador> jugadores = List.of();
-  private volatile List<Carta> cartasCantadas = List.of();
-  private volatile int restantes;
-  private volatile EstadoPartida estadoPartida = EstadoPartida.NO_INICIADA;
-  private volatile String ganador = "";
-  private volatile String ultimoError = "";
-  private volatile Patron patron = Patron.CHORRO;
-  private volatile TipoMensaje mensaje;
+  private List<Jugador> jugadores = List.of();
+  private List<Carta> cartasCantadas = List.of();
+  private int restantes;
+  private EstadoPartida estadoPartida = EstadoPartida.NO_INICIADA;
+  private String ganador = "";
+  private String ultimoError = "";
+  private Patron patron = Patron.CHORRO;
+  private TipoMensaje mensaje;
 
   public ModeloJuego(String jugadorLocal, Fachada fachada) {
     if (jugadorLocal == null || jugadorLocal.isBlank()) {

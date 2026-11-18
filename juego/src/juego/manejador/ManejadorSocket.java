@@ -19,6 +19,7 @@ import juego.modelo.EstadoPartida;
 import juego.modelo.Jugador;
 import juego.modelo.ModeloJuego;
 import juego.modelo.Patron;
+import javax.swing.SwingUtilities;
 import serializador.ISerializador;
 
 public class ManejadorSocket implements IReceptorExterno {
@@ -40,6 +41,10 @@ public class ManejadorSocket implements IReceptorExterno {
   @Override
   public void alRecibir(byte[] datos) {
     Object contenido = serializador.deserializar(datos, Object.class);
+    SwingUtilities.invokeLater(() -> procesar(contenido));
+  }
+
+  private void procesar(Object contenido) {
     if (contenido instanceof EventoError evento) {
       modelo.registrarError(evento.mensaje());
     } else if (contenido instanceof EventoSincronizacion evento) {
