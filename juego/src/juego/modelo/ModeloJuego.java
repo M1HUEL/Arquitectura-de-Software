@@ -17,7 +17,6 @@ public class ModeloJuego implements Modelo {
   private EstadoPartida estadoPartida = EstadoPartida.NO_INICIADA;
   private String ganador = "";
   private String ultimoError = "";
-  private Patron patron = Patron.CHORRO;
   private TipoMensaje mensaje;
 
   public ModeloJuego(String jugadorLocal, Fachada fachada) {
@@ -54,7 +53,6 @@ public class ModeloJuego implements Modelo {
     String ganador
   ) {
     this.estadoPartida = estado == null ? EstadoPartida.NO_INICIADA : estado;
-    this.patron = patron == null ? Patron.CHORRO : patron;
     this.jugadores = jugadores == null ? List.of() : List.copyOf(jugadores);
     this.cartasCantadas = cartasCantadas == null ? List.of() : List.copyOf(cartasCantadas);
     this.restantes = Math.max(0, restantes);
@@ -165,10 +163,6 @@ public class ModeloJuego implements Modelo {
   @Override
   public String obtenerGanador() {
     return ganador;
-  }
-
-  public Patron obtenerPatron() {
-    return patron;
   }
 
   @Override
