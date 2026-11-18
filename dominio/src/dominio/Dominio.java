@@ -35,7 +35,7 @@ public class Dominio implements IReceptorExterno {
 
   private static final long INTERVALO_POR_DEFECTO = 3000L;
   private static final String PATRON_POR_DEFECTO = "CHORRO";
-  private static final int JUGADORES = 3;
+  private static final int JUGADORES_MINIMOS = 3;
 
   private final ISerializador serializador;
   private final Dispatcher dispatcher;
@@ -46,12 +46,14 @@ public class Dominio implements IReceptorExterno {
   private final String temaEventos;
   private final long intervaloMs;
   private final Random aleatorio;
+  private final long esperaMs;
   private final List<String> humanos = new ArrayList<>();
   private final Object candado = new Object();
 
   private Partida partida;
   private String patronActual = PATRON_POR_DEFECTO;
   private Timer temporizador;
+  private Timer temporizadorEspera;
   private boolean activo;
 
   public Dominio(
@@ -112,6 +114,23 @@ public class Dominio implements IReceptorExterno {
     long intervaloMs,
     long semilla
   ) {
+    this(serializador, dispatcher, receptor, hostBroker, puertoBroker, temaComandos,
+      temaEventos, jugadoresHumanos, intervaloMs, semilla, 0L);
+  }
+
+  public Dominio(
+    ISerializador serializador,
+    Dispatcher dispatcher,
+    Receptor receptor,
+    String hostBroker,
+    int puertoBroker,
+    String temaComandos,
+    String temaEventos,
+    List<String> jugadoresHumanos,
+    long intervaloMs,
+    long semilla,
+    long esperaMs
+  ) {
     if (serializador == null) {
       throw new IllegalArgumentException("El serializador no puede ser nulo");
     }
@@ -133,7 +152,10 @@ public class Dominio implements IReceptorExterno {
     if (temaEventos == null || temaEventos.isBlank()) {
       throw new IllegalArgumentException("El tema de eventos no puede estar vacío");
     }
-    if (jugadoresHumanos == null || jugadoresHumanos.isEmpty()) {
+    if (jugadoresHumanos == null) {
+      throw new IllegalArgumentException("La lista de jugadores no puede ser nula");
+    }
+    if (esperaMs <= 0 && jugadoresHumanos.isEmpty()) {
       throw new IllegalArgumentException("Debe haber al menos un jugador humano");
     }
     for (String nombre : jugadoresHumanos) {
@@ -154,6 +176,7 @@ public class Dominio implements IReceptorExterno {
     this.temaEventos = temaEventos.trim();
     this.intervaloMs = intervaloMs > 0 ? intervaloMs : INTERVALO_POR_DEFECTO;
     this.aleatorio = new Random(semilla);
+    this.esperaMs = Math.max(0L, esperaMs);
     this.receptor.agregarReceptor(this);
   }
 
@@ -177,12 +200,16 @@ public class Dominio implements IReceptorExterno {
         "No se pudo iniciar el dominio en el puerto " + puertoLocal);
     }
     activo = true;
+    if (esperaMs > 0) {
+      iniciarEspera();
+    }
   }
 
   public void detener() {
     synchronized (candado) {
       activo = false;
       detenerTemporizador();
+      detenerEspera();
     }
     receptor.detener();
     dispatcher.detener();
@@ -201,7 +228,11 @@ public class Dominio implements IReceptorExterno {
 
   private void procesar(Object contenido) {
     if (contenido instanceof ComandoIniciar comando) {
-      iniciarPartida(comando.jugador());
+      if (esperaMs > 0 && (partida == null || partida.estaFinalizada())) {
+        registrarJugador(comando.jugador());
+      } else {
+        iniciarPartida(comando.jugador());
+      }
     } else if (contenido instanceof ComandoMarcar comando) {
       marcar(comando.jugador(), comando.cartaId());
     } else if (contenido instanceof ComandoPatron comando) {
@@ -237,17 +268,59 @@ public class Dominio implements IReceptorExterno {
       publicar(new EventoError("El jugador no participa en la partida"));
       return;
     }
-    List<String> nombres = new ArrayList<>();
-    for (String humano : humanos) {
-      if (nombres.size() >= JUGADORES) {
-        break;
-      }
-      nombres.add(humano);
+    crearPartida(new ArrayList<>(humanos), true);
+  }
+
+  private void registrarJugador(String jugador) {
+    if (jugador == null || jugador.isBlank()) {
+      publicar(new EventoError("El nombre del jugador no puede estar vacío"));
+      return;
     }
-    for (int i = 1; nombres.size() < JUGADORES; i++) {
-      String nombre = "Oponente " + i;
-      if (!contieneNombre(nombres, nombre)) {
-        nombres.add(nombre);
+    synchronized (candado) {
+      String limpio = jugador.trim();
+      if (!contieneNombre(humanos, limpio)) {
+        humanos.add(limpio);
+        System.out.println("Jugador conectado: " + limpio
+          + " (" + humanos.size() + " en espera)");
+      }
+    }
+    publicar(new EventoSincronizacion(estadoJuego()));
+  }
+
+  private void iniciarEspera() {
+    detenerEspera();
+    temporizadorEspera = new Timer("dominio-espera", true);
+    temporizadorEspera.schedule(new TimerTask() {
+      @Override
+      public void run() {
+        synchronized (candado) {
+          if (!activo) {
+            return;
+          }
+          if (humanos.isEmpty()) {
+            System.out.println("No hay jugadores conectados; se reinicia la espera");
+            iniciarEspera();
+            return;
+          }
+          System.out.println("Tiempo de espera terminado. Iniciando partida con: "
+            + humanos);
+          crearPartida(new ArrayList<>(humanos), false);
+        }
+      }
+    }, esperaMs);
+    System.out.println("Esperando " + (esperaMs / 1000)
+      + " s para que se conecten los clientes...");
+  }
+
+  private void crearPartida(List<String> jugadores, boolean completarConOponentes) {
+    detenerEspera();
+    List<String> nombres = new ArrayList<>(jugadores);
+    if (completarConOponentes) {
+      for (int i = 1; nombres.size() < JUGADORES_MINIMOS; i++) {
+        String nombre = "Oponente " + i;
+        if (!contieneNombre(nombres, nombre)) {
+          nombres.add(nombre);
+        }
       }
     }
     partida = Partida.crear(nombres, TipoVictoria.CHORRO, aleatorio);
@@ -268,6 +341,13 @@ public class Dominio implements IReceptorExterno {
           }
         }
       }, intervaloMs, intervaloMs);
+    }
+  }
+
+  private void detenerEspera() {
+    if (temporizadorEspera != null) {
+      temporizadorEspera.cancel();
+      temporizadorEspera = null;
     }
   }
 

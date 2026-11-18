@@ -1,16 +1,15 @@
 package ensamblador;
 
 import broker.Broker;
-import comunicacion.Dispatcher;
 import comunicacion.DispatcherFactory;
 import comunicacion.Receptor;
 import dominio.Dominio;
-import java.awt.Dimension;
-import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Locale;
+import java.util.Random;
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import juego.controlador.ControladorJuego;
 import juego.fachada.FachadaBroker;
@@ -24,109 +23,175 @@ public class Main {
   private static final String HOST = "127.0.0.1";
   private static final int PUERTO_BROKER = 7000;
   private static final int PUERTO_DOMINIO = 7001;
-  private static final int PUERTO_MVC = 7002;
+  private static final int PUERTO_CLIENTE = 7002;
+  private static final int SEGUNDOS_ESPERA = 30;
+  private static final long INTERVALO_CARTAS = 3000L;
   private static final String TEMA_COMANDOS = "dominio";
   private static final String TEMA_EVENTOS = "juego";
-  private static final String JUGADOR_UNO = "Jugador 1";
-  private static final String JUGADOR_DOS = "Jugador 2";
-  private static final long INTERVALO_CARTAS = 3000L;
 
-  public static void main(String[] args) throws InterruptedException {
-    int puertoBroker = args.length >= 1 ? Integer.parseInt(args[0]) : PUERTO_BROKER;
-    int puertoDominio = args.length >= 2 ? Integer.parseInt(args[1]) : PUERTO_DOMINIO;
-    int puertoMvc = args.length >= 3 ? Integer.parseInt(args[2]) : PUERTO_MVC;
-    long intervalo = args.length >= 4 ? Long.parseLong(args[3]) : INTERVALO_CARTAS;
+  public static void main(String[] args) {
+    if (args.length == 0) {
+      mostrarUso();
+      return;
+    }
+    switch (args[0].toLowerCase(Locale.ROOT)) {
+      case "broker" ->
+        iniciarBroker(args);
+      case "dominio" ->
+        iniciarDominio(args);
+      case "cliente" ->
+        iniciarCliente(args);
+      default ->
+        mostrarUso();
+    }
+  }
 
+  private static void iniciarBroker(String[] args) {
+    int puertoBroker = entero(args, 1, PUERTO_BROKER);
+    int puertoDominio = entero(args, 2, PUERTO_DOMINIO);
     Broker broker = new Broker(new Serializador(PATRON_FILTRO), DispatcherFactory.crear());
-    Dispatcher dispatcherDominio = DispatcherFactory.crear();
-    Receptor receptorDominio = new Receptor();
+    try {
+      broker.suscribir(TEMA_COMANDOS, HOST, puertoDominio);
+      if (args.length > 3) {
+        for (int i = 3; i < args.length; i++) {
+          int puertoCliente = entero(args, i, -1);
+          if (puertoCliente > 0) {
+            broker.suscribir(TEMA_EVENTOS, HOST, puertoCliente);
+          }
+        }
+      } else {
+        broker.suscribir(TEMA_EVENTOS, HOST, PUERTO_CLIENTE);
+        broker.suscribir(TEMA_EVENTOS, HOST, PUERTO_CLIENTE + 1);
+      }
+      broker.iniciar(puertoBroker);
+    } catch (RuntimeException e) {
+      System.err.println("No se pudo iniciar el broker: " + e.getMessage());
+      broker.detener();
+      return;
+    }
+    Runtime.getRuntime().addShutdownHook(new Thread(broker::detener));
+    System.out.println("Broker escuchando en " + HOST + ":" + broker.obtenerPuerto());
+    System.out.println("Dominio suscrito en " + HOST + ":" + puertoDominio);
+    System.out.println("Clientes suscritos: " + broker.obtenerSuscriptores(TEMA_EVENTOS));
+    bloquear();
+  }
+
+  private static void iniciarDominio(String[] args) {
+    int puertoDominio = entero(args, 1, PUERTO_DOMINIO);
+    int puertoBroker = entero(args, 2, PUERTO_BROKER);
+    int segundosEspera = entero(args, 3, SEGUNDOS_ESPERA);
+    long intervalo = largo(args, 4, INTERVALO_CARTAS);
     Dominio dominio = new Dominio(
       new Serializador(PATRON_FILTRO),
-      dispatcherDominio,
-      receptorDominio,
+      DispatcherFactory.crear(),
+      new Receptor(),
       HOST,
       puertoBroker,
       TEMA_COMANDOS,
       TEMA_EVENTOS,
-      List.of(JUGADOR_UNO, JUGADOR_DOS),
-      intervalo
+      List.of(),
+      intervalo,
+      new Random().nextLong(),
+      Math.max(1, segundosEspera) * 1000L
     );
-    FachadaBroker fachadaUno = new FachadaBroker(
-      JUGADOR_UNO, HOST, puertoBroker, TEMA_COMANDOS, TEMA_EVENTOS, puertoMvc);
-    FachadaBroker fachadaDos = new FachadaBroker(
-      JUGADOR_DOS, HOST, puertoBroker, TEMA_COMANDOS, TEMA_EVENTOS, puertoMvc + 1);
-
     try {
-      broker.suscribir(TEMA_COMANDOS, HOST, puertoDominio);
-      broker.suscribir(TEMA_EVENTOS, HOST, puertoMvc);
-      broker.suscribir(TEMA_EVENTOS, HOST, puertoMvc + 1);
-      broker.iniciar(puertoBroker);
       dominio.iniciar(puertoDominio);
     } catch (RuntimeException e) {
-      System.err.println("No se pudo iniciar la aplicación: " + e.getMessage());
-      fachadaUno.cerrar();
-      fachadaDos.cerrar();
+      System.err.println("No se pudo iniciar el dominio: " + e.getMessage());
       dominio.detener();
-      broker.detener();
       return;
     }
+    Runtime.getRuntime().addShutdownHook(new Thread(dominio::detener));
+    System.out.println("Dominio escuchando en " + HOST + ":" + puertoDominio);
+    System.out.println("Broker en " + HOST + ":" + puertoBroker);
+    System.out.println("Espera para conectar clientes: " + Math.max(1, segundosEspera) + " s");
+    bloquear();
+  }
 
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      fachadaUno.desconectar();
-      fachadaDos.desconectar();
-      dominio.detener();
-      broker.detener();
-    }));
-
-    System.out.println("Broker: " + HOST + ":" + broker.obtenerPuerto());
-    System.out.println("Dominio: " + HOST + ":" + puertoDominio);
-    System.out.println("MVC " + JUGADOR_UNO + ": " + HOST + ":" + puertoMvc);
-    System.out.println("MVC " + JUGADOR_DOS + ": " + HOST + ":" + (puertoMvc + 1));
-
-    AtomicInteger ventanasAbiertas = new AtomicInteger(2);
-    Runnable alCerrarVentana = () -> {
-      if (ventanasAbiertas.decrementAndGet() == 0) {
-        fachadaUno.desconectar();
-        fachadaDos.desconectar();
-        dominio.detener();
-        broker.detener();
-        System.exit(0);
-      }
-    };
-
+  private static void iniciarCliente(String[] args) {
+    if (args.length < 3) {
+      System.out.println("Uso: cliente <nombre> <puertoCliente> [puertoBroker] [hostBroker]");
+      return;
+    }
+    String nombre = args[1];
+    if (nombre == null || nombre.isBlank()) {
+      System.out.println("El nombre del cliente no puede estar vacío");
+      return;
+    }
+    int puertoCliente = entero(args, 2, PUERTO_CLIENTE);
+    int puertoBroker = entero(args, 3, PUERTO_BROKER);
+    String hostBroker = args.length > 4 ? args[4] : HOST;
+    FachadaBroker fachada = new FachadaBroker(
+      nombre, hostBroker, puertoBroker, TEMA_COMANDOS, TEMA_EVENTOS, puertoCliente);
     SwingUtilities.invokeLater(() -> {
-      VistaJuego vistaUno = crearCliente(JUGADOR_UNO, fachadaUno, alCerrarVentana);
-      VistaJuego vistaDos = crearCliente(JUGADOR_DOS, fachadaDos, alCerrarVentana);
-      ubicar(vistaUno, 0, 2);
-      ubicar(vistaDos, 1, 2);
-      vistaUno.setVisible(true);
-      vistaDos.setVisible(true);
-    });
-
-    Thread.currentThread().join();
-  }
-
-  private static VistaJuego crearCliente(
-    String jugador, FachadaBroker fachada, Runnable alCerrarVentana) {
-    ModeloJuego modelo = new ModeloJuego(jugador, fachada);
-    ControladorJuego controlador = new ControladorJuego(modelo);
-    VistaJuego vista = new VistaJuego(modelo, controlador);
-    vista.addWindowListener(new WindowAdapter() {
-      @Override
-      public void windowClosed(WindowEvent evento) {
-        alCerrarVentana.run();
+      ModeloJuego modelo = new ModeloJuego(nombre, fachada);
+      ControladorJuego controlador = new ControladorJuego(modelo);
+      VistaJuego vista = new VistaJuego(modelo, controlador);
+      vista.addWindowListener(new WindowAdapter() {
+        @Override
+        public void windowClosed(WindowEvent evento) {
+          System.exit(0);
+        }
+      });
+      modelo.agregarObservador(vista);
+      vista.setVisible(true);
+      try {
+        modelo.iniciar();
+      } catch (RuntimeException e) {
+        JOptionPane.showMessageDialog(
+          vista,
+          "No se pudo conectar el cliente: " + e.getMessage(),
+          "Error",
+          JOptionPane.ERROR_MESSAGE
+        );
+        vista.dispose();
       }
     });
-    modelo.agregarObservador(vista);
-    modelo.iniciar();
-    return vista;
   }
 
-  private static void ubicar(VistaJuego vista, int indice, int total) {
-    Dimension pantalla = Toolkit.getDefaultToolkit().getScreenSize();
-    int ancho = Math.max(480, pantalla.width / total);
-    int alto = Math.min(700, pantalla.height);
-    vista.setSize(ancho, alto);
-    vista.setLocation(indice * ancho, 0);
+  private static void bloquear() {
+    try {
+      Thread.currentThread().join();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  private static int entero(String[] args, int indice, int porDefecto) {
+    if (args.length <= indice) {
+      return porDefecto;
+    }
+    try {
+      return Integer.parseInt(args[indice]);
+    } catch (NumberFormatException e) {
+      System.out.println("Valor no válido: " + args[indice] + ". Se usa " + porDefecto);
+      return porDefecto;
+    }
+  }
+
+  private static long largo(String[] args, int indice, long porDefecto) {
+    if (args.length <= indice) {
+      return porDefecto;
+    }
+    try {
+      return Long.parseLong(args[indice]);
+    } catch (NumberFormatException e) {
+      System.out.println("Valor no válido: " + args[indice] + ". Se usa " + porDefecto);
+      return porDefecto;
+    }
+  }
+
+  private static void mostrarUso() {
+    System.out.println("Uso:");
+    System.out.println("  ensamblador.Main broker [puertoBroker] [puertoDominio] [puertoCliente...]");
+    System.out.println("  ensamblador.Main dominio [puertoDominio] [puertoBroker] [segundosEspera] [intervaloMs]");
+    System.out.println("  ensamblador.Main cliente <nombre> <puertoCliente> [puertoBroker] [hostBroker]");
+    System.out.println();
+    System.out.println("Ejemplo:");
+    System.out.println("  ensamblador.Main broker 7000 7001 7002 7003 7004");
+    System.out.println("  ensamblador.Main dominio 7001 7000 30");
+    System.out.println("  ensamblador.Main cliente Miguel 7002");
+    System.out.println("  ensamblador.Main cliente Ana 7003");
+    System.out.println("  ensamblador.Main cliente Luis 7004");
   }
 }

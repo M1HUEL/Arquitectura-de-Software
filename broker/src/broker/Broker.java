@@ -96,6 +96,10 @@ public class Broker implements IReceptorExterno {
     return gestor.obtenerTemas();
   }
 
+  public List<GestorSuscriptores.Suscriptor> obtenerSuscriptores(String tema) {
+    return gestor.obtener(tema);
+  }
+
   public static void main(String[] args) {
     if (args.length < 1) {
       System.err.println("Uso: Broker <puertoLocal> [tema host puertoDestino]...");
