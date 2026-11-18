@@ -109,14 +109,14 @@ public class ModeloJuego implements Modelo {
   }
 
   private TipoMensaje validarPatron(Jugador jugador, Patron patron) {
-    if (patron == null || !puedeJugar(jugador) || !jugador.cumple(patron)) {
+    if (patron == null || !puedeJugar(jugador)) {
       return TipoMensaje.PATRON_INVALIDO;
     }
     return TipoMensaje.PATRON_VALIDO;
   }
 
   private TipoMensaje validarVictoria(Jugador jugador, Patron patron) {
-    if (patron == null || !puedeJugar(jugador) || !jugador.cumple(patron)) {
+    if (patron == null || !puedeJugar(jugador)) {
       return TipoMensaje.VICTORIA_INVALIDA;
     }
     return TipoMensaje.VICTORIA_VALIDA;
