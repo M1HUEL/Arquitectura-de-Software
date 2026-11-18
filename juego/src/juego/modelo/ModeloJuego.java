@@ -10,8 +10,7 @@ public class ModeloJuego implements Modelo {
   private final String jugadorLocal;
   private final Fachada fachada;
   private final List<Observador> observadores = new CopyOnWriteArrayList<>();
-  private volatile Mensaje mensaje;
-  private long versionMensaje;
+  private Mensaje mensaje;
   private final Runnable oyente = this::notificarObservadores;
   private boolean conectado;
 
@@ -80,7 +79,6 @@ public class ModeloJuego implements Modelo {
 
   private void notificarObservadores(Mensaje resultado) {
     this.mensaje = resultado;
-    this.versionMensaje++;
     notificarObservadores();
   }
 
@@ -124,12 +122,9 @@ public class ModeloJuego implements Modelo {
   }
 
   @Override
-  public Mensaje obtenerMensaje() {
-    return mensaje;
-  }
-
-  @Override
-  public long obtenerVersionMensaje() {
-    return versionMensaje;
+  public Mensaje consumirMensaje() {
+    Mensaje actual = mensaje;
+    mensaje = null;
+    return actual;
   }
 }

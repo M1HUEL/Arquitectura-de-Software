@@ -22,7 +22,5 @@ public interface Modelo {
 
   String obtenerUltimoError();
 
-  Mensaje obtenerMensaje();
-
-  long obtenerVersionMensaje();
+  Mensaje consumirMensaje();
 }

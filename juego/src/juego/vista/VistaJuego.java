@@ -24,7 +24,6 @@ public class VistaJuego extends JFrame implements Observador {
   private final ControladorJuego controlador;
   private final PanelLateral panelLateral;
   private final JPanel panelTableros;
-  private long versionMensajeMostrado = -1;
 
   public VistaJuego(Modelo modelo, ControladorJuego controlador) {
     this.modelo = modelo;
@@ -71,33 +70,29 @@ public class VistaJuego extends JFrame implements Observador {
     panelTableros.revalidate();
     panelTableros.repaint();
 
-    long version = this.modelo.obtenerVersionMensaje();
-    if (version != versionMensajeMostrado) {
-      versionMensajeMostrado = version;
-      Mensaje mensaje = this.modelo.obtenerMensaje();
-      if (mensaje == null) {
-        return;
-      }
-      switch (mensaje) {
-        case CASILLA_VALIDA:
-          mostrarMensajeCasillaValida();
-          break;
-        case CASILLA_INVALIDA:
-          mostrarMensajeCasillaInvalida();
-          break;
-        case PATRON_VALIDO:
-          mostrarMensajePatronValido();
-          break;
-        case PATRON_INVALIDO:
-          mostrarMensajePatronInvalido();
-          break;
-        case VICTORIA_VALIDA:
-          mostrarMensajeVictoriaValida();
-          break;
-        case VICTORIA_INVALIDA:
-          mostrarMensajeVictoriaInvalida();
-          break;
-      }
+    Mensaje mensaje = this.modelo.consumirMensaje();
+    if (mensaje == null) {
+      return;
+    }
+    switch (mensaje) {
+      case CASILLA_VALIDA:
+        mostrarMensajeCasillaValida();
+        break;
+      case CASILLA_INVALIDA:
+        mostrarMensajeCasillaInvalida();
+        break;
+      case PATRON_VALIDO:
+        mostrarMensajePatronValido();
+        break;
+      case PATRON_INVALIDO:
+        mostrarMensajePatronInvalido();
+        break;
+      case VICTORIA_VALIDA:
+        mostrarMensajeVictoriaValida();
+        break;
+      case VICTORIA_INVALIDA:
+        mostrarMensajeVictoriaInvalida();
+        break;
     }
   }
 
