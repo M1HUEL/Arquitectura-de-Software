@@ -44,7 +44,9 @@ public final class Tablero {
   }
 
   public Casilla obtenerCasilla(int fila, int columna) {
-    validarPosicion(fila, columna);
+    if (fila < 0 || fila >= FILAS || columna < 0 || columna >= COLUMNAS) {
+      throw new IllegalArgumentException("La posición (" + fila + ", " + columna + ") no existe en el tablero");
+    }
     return casillas[fila][columna];
   }
 
@@ -220,11 +222,5 @@ public final class Tablero {
       }
     }
     return null;
-  }
-
-  private void validarPosicion(int fila, int columna) {
-    if (fila < 0 || fila >= FILAS || columna < 0 || columna >= COLUMNAS) {
-      throw new IllegalArgumentException("La posición (" + fila + ", " + columna + ") no existe en el tablero");
-    }
   }
 }

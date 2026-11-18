@@ -98,28 +98,24 @@ public final class Partida {
 
   public void finalizar() {
     if (ganadores.isEmpty()) {
-      asignarGanadorPorPuntos();
-    }
-    estado = EstadoPartida.FINALIZADA;
-  }
-
-  private void asignarGanadorPorPuntos() {
-    int mejorPuntaje = -1;
-    Jugador mejorJugador = null;
-    boolean empatado = false;
-    for (Jugador jugador : jugadores) {
-      int puntos = jugador.obtenerPuntos();
-      if (puntos > mejorPuntaje) {
-        mejorPuntaje = puntos;
-        mejorJugador = jugador;
-        empatado = false;
-      } else if (puntos == mejorPuntaje) {
-        empatado = true;
+      int mejorPuntaje = -1;
+      Jugador mejorJugador = null;
+      boolean empatado = false;
+      for (Jugador jugador : jugadores) {
+        int puntos = jugador.obtenerPuntos();
+        if (puntos > mejorPuntaje) {
+          mejorPuntaje = puntos;
+          mejorJugador = jugador;
+          empatado = false;
+        } else if (puntos == mejorPuntaje) {
+          empatado = true;
+        }
+      }
+      if (mejorJugador != null && !empatado) {
+        ganadores.add(mejorJugador);
       }
     }
-    if (mejorJugador != null && !empatado) {
-      ganadores.add(mejorJugador);
-    }
+    estado = EstadoPartida.FINALIZADA;
   }
 
   public Carta cantarSiguiente() {

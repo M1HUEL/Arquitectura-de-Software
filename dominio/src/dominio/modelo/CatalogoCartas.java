@@ -1,22 +1,15 @@
 package dominio.modelo;
 
 import comun.CartasLoteria;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.IntStream;
 
 public final class CatalogoCartas {
 
-  private static final List<Carta> CARTAS = crearCartas();
-
-  private static List<Carta> crearCartas() {
-    List<String> nombres = CartasLoteria.NOMBRES;
-    List<Carta> cartas = new ArrayList<>(nombres.size());
-    for (int i = 0; i < nombres.size(); i++) {
-      cartas.add(new Carta(i + 1, nombres.get(i)));
-    }
-    return List.copyOf(cartas);
-  }
+  private static final List<Carta> CARTAS = IntStream.rangeClosed(1, CartasLoteria.NOMBRES.size())
+    .mapToObj(id -> new Carta(id, CartasLoteria.NOMBRES.get(id - 1)))
+    .toList();
 
   private CatalogoCartas() {
   }
