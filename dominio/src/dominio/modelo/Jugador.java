@@ -1,6 +1,8 @@
 package dominio.modelo;
 
+import java.util.EnumSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 public final class Jugador {
@@ -8,7 +10,10 @@ public final class Jugador {
   private final String id;
   private final String nombre;
   private final Tabla tabla;
+  private final Set<TipoVictoria> patronesPuntuados = EnumSet.noneOf(TipoVictoria.class);
   private int puntos;
+
+  public static final int PUNTOS_POR_PATRON = 5;
 
   public Jugador(String nombre, Tabla tabla) {
     this(UUID.randomUUID().toString(), nombre, tabla);
@@ -63,6 +68,15 @@ public final class Jugador {
 
   public int obtenerPuntos() {
     return puntos;
+  }
+
+  public boolean puntuarPatron(TipoVictoria tipoVictoria) {
+    Objects.requireNonNull(tipoVictoria, "tipoVictoria");
+    if (!tieneLoteria(tipoVictoria) || !patronesPuntuados.add(tipoVictoria)) {
+      return false;
+    }
+    sumarPuntos(PUNTOS_POR_PATRON);
+    return true;
   }
 
   @Override

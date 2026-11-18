@@ -207,7 +207,7 @@ public class Dominio implements IReceptorExterno {
     } else if (contenido instanceof ComandoMarcar comando) {
       marcar(comando.jugador(), comando.cartaId());
     } else if (contenido instanceof ComandoPatron comando) {
-      cambiarPatron(comando.patron());
+      cambiarPatron(comando.jugador(), comando.patron());
     } else if (contenido instanceof ComandoVictoria comando) {
       gritarVictoria(comando.jugador(), comando.patron());
     } else if (contenido instanceof ComandoCerrar) {
@@ -378,9 +378,27 @@ public class Dominio implements IReceptorExterno {
     }
   }
 
-  private void cambiarPatron(String patron) {
-    patronActual = convertirTipoVictoria(patron).name();
-    publicar(new EventoSincronizacion(estadoJuego()));
+  private void cambiarPatron(String nombreJugador, String patron) {
+    if (partida == null || !partida.estaEnCurso()) {
+      publicar(new EventoError("La partida no está en curso"));
+      return;
+    }
+    Jugador jugador = buscarJugador(nombreJugador);
+    if (jugador == null) {
+      publicar(new EventoError("El jugador no participa en la partida"));
+      return;
+    }
+    try {
+      TipoVictoria tipo = convertirTipoVictoria(patron);
+      if (!jugador.puntuarPatron(tipo)) {
+        publicar(new EventoError("El patrón no está completo o ya fue puntuado"));
+        return;
+      }
+      patronActual = tipo.name();
+      publicar(new EventoSincronizacion(estadoJuego()));
+    } catch (RuntimeException e) {
+      publicarError(e);
+    }
   }
 
   private void gritarVictoria(String nombreJugador, String patron) {
