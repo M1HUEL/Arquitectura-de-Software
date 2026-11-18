@@ -23,7 +23,8 @@ public class VistaJuego extends JFrame implements Observador {
   private final Modelo modelo;
   private final ControladorJuego controlador;
   private final PanelLateral panelLateral;
-  private final JPanel panelTableros;
+  private final JPanel contenedorTableros;
+  private final List<PanelTablero> tableros = new ArrayList<>();
 
   public VistaJuego(Modelo modelo, ControladorJuego controlador) {
     this.modelo = modelo;
@@ -34,7 +35,7 @@ public class VistaJuego extends JFrame implements Observador {
     setSize(1200, 700);
     setLocationRelativeTo(null);
 
-    panelTableros = new JPanel(new GridLayout(0, 1, 0, 8));
+    contenedorTableros = new JPanel(new GridLayout(0, 1, 0, 8));
     panelLateral = new PanelLateral(modelo, controlador, this::buscarJugadorLocal, this::dispose);
 
     addWindowListener(new WindowAdapter() {
@@ -44,7 +45,7 @@ public class VistaJuego extends JFrame implements Observador {
       }
     });
 
-    add(new JScrollPane(panelTableros), BorderLayout.CENTER);
+    add(new JScrollPane(contenedorTableros), BorderLayout.CENTER);
     add(panelLateral, BorderLayout.EAST);
   }
 
@@ -60,15 +61,27 @@ public class VistaJuego extends JFrame implements Observador {
     panelLateral.actualizar(jugadores, local);
 
     boolean puedeJugar = this.modelo.obtenerEstadoPartida() == EstadoPartida.EN_CURSO;
-    panelTableros.removeAll();
+    List<PanelTablero> ordenados = new ArrayList<>();
     for (Jugador jugador : jugadores) {
       boolean esLocal = local != null
         && jugador.obtenerNombre().equals(local.obtenerNombre());
-      panelTableros.add(new PanelTablero(
-        jugador, esLocal, esLocal && puedeJugar, controlador));
+      PanelTablero tablero = buscarTablero(jugador.obtenerNombre());
+      if (tablero == null) {
+        tablero = new PanelTablero(
+          jugador, esLocal, esLocal && puedeJugar, controlador);
+        tableros.add(tablero);
+      } else {
+        tablero.actualizar(jugador, esLocal, esLocal && puedeJugar);
+      }
+      ordenados.add(tablero);
     }
-    panelTableros.revalidate();
-    panelTableros.repaint();
+    tableros.retainAll(ordenados);
+    contenedorTableros.removeAll();
+    for (PanelTablero tablero : ordenados) {
+      contenedorTableros.add(tablero);
+    }
+    contenedorTableros.revalidate();
+    contenedorTableros.repaint();
 
     Mensaje mensaje = this.modelo.consumirMensaje();
     if (mensaje == null) {
@@ -114,6 +127,15 @@ public class VistaJuego extends JFrame implements Observador {
     for (Jugador jugador : jugadores) {
       if (jugador.obtenerNombre().equals(nombreLocal)) {
         return jugador;
+      }
+    }
+    return null;
+  }
+
+  private PanelTablero buscarTablero(String nombre) {
+    for (PanelTablero tablero : tableros) {
+      if (tablero.obtenerNombre().equals(nombre)) {
+        return tablero;
       }
     }
     return null;

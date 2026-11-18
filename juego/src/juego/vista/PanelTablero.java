@@ -13,8 +13,10 @@ public class PanelTablero extends JPanel {
 
   private static final int COLUMNAS = 4;
 
-  private final Jugador jugador;
+  private final String nombre;
   private final ControladorJuego controlador;
+  private Jugador jugador;
+  private JPanel tablero;
 
   public PanelTablero(
     Jugador jugador,
@@ -22,13 +24,22 @@ public class PanelTablero extends JPanel {
     boolean puedeJugar,
     ControladorJuego controlador
   ) {
-    this.jugador = jugador;
+    this.nombre = jugador.obtenerNombre();
     this.controlador = controlador;
     setLayout(new BorderLayout());
+    actualizar(jugador, esLocal, puedeJugar);
+  }
+
+  public String obtenerNombre() {
+    return nombre;
+  }
+
+  public void actualizar(Jugador jugador, boolean esLocal, boolean puedeJugar) {
+    this.jugador = jugador;
     setBorder(BorderFactory.createTitledBorder(
       esLocal ? jugador.obtenerNombre() + " (tu tablero)" : jugador.obtenerNombre()));
 
-    JPanel tablero = new JPanel(new GridLayout(COLUMNAS, COLUMNAS));
+    JPanel nuevoTablero = new JPanel(new GridLayout(COLUMNAS, COLUMNAS));
     for (Carta carta : jugador.obtenerCartas()) {
       boolean marcada = jugador.estaSeleccionada(carta);
       JButton casilla = new JButton(
@@ -39,9 +50,16 @@ public class PanelTablero extends JPanel {
       } else if (!esLocal) {
         casilla.setToolTipText("Tablero de otro jugador: solo lectura");
       }
-      tablero.add(casilla);
+      nuevoTablero.add(casilla);
     }
+
+    if (tablero != null) {
+      remove(tablero);
+    }
+    tablero = nuevoTablero;
     add(tablero, BorderLayout.CENTER);
+    revalidate();
+    repaint();
   }
 
   public void seleccionarCasilla(Carta carta) {
