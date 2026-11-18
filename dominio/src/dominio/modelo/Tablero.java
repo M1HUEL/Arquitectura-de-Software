@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
-public final class Tabla {
+public final class Tablero {
 
   public static final int FILAS = 4;
   public static final int COLUMNAS = 4;
@@ -16,17 +16,17 @@ public final class Tabla {
 
   private final Casilla[][] casillas;
 
-  public Tabla(List<Carta> cartas) {
+  public Tablero(List<Carta> cartas) {
     Objects.requireNonNull(cartas, "cartas");
     if (cartas.size() != TOTAL_CARTAS) {
-      throw new IllegalArgumentException("La tabla debe tener exactamente " + TOTAL_CARTAS + " cartas");
+      throw new IllegalArgumentException("El tablero debe tener exactamente " + TOTAL_CARTAS + " cartas");
     }
     for (Carta carta : cartas) {
       Objects.requireNonNull(carta, "Las cartas no pueden contener valores nulos");
     }
     Set<Carta> unicas = new HashSet<>(cartas);
     if (unicas.size() != TOTAL_CARTAS) {
-      throw new IllegalArgumentException("La tabla no puede contener cartas repetidas");
+      throw new IllegalArgumentException("El tablero no puede contener cartas repetidas");
     }
     this.casillas = new Casilla[FILAS][COLUMNAS];
     for (int i = 0; i < TOTAL_CARTAS; i++) {
@@ -36,11 +36,11 @@ public final class Tabla {
     }
   }
 
-  public static Tabla generar(Random aleatorio) {
+  public static Tablero generar(Random aleatorio) {
     Objects.requireNonNull(aleatorio, "aleatorio");
     List<Carta> disponibles = new ArrayList<>(CatalogoCartas.obtenerTodas());
     Collections.shuffle(disponibles, aleatorio);
-    return new Tabla(disponibles.subList(0, TOTAL_CARTAS));
+    return new Tablero(disponibles.subList(0, TOTAL_CARTAS));
   }
 
   public Casilla obtenerCasilla(int fila, int columna) {
@@ -146,7 +146,7 @@ public final class Tabla {
       case CENTRO ->
         tieneCentro();
       case TABLA_LLENA ->
-        tieneTablaLlena();
+        tieneTableroLleno();
     };
   }
 
@@ -204,7 +204,7 @@ public final class Tabla {
       && casillas[FILAS - 1][COLUMNAS - 1].estaMarcada();
   }
 
-  public boolean tieneTablaLlena() {
+  public boolean tieneTableroLleno() {
     return obtenerAciertos() == TOTAL_CARTAS;
   }
 
@@ -224,7 +224,7 @@ public final class Tabla {
 
   private void validarPosicion(int fila, int columna) {
     if (fila < 0 || fila >= FILAS || columna < 0 || columna >= COLUMNAS) {
-      throw new IllegalArgumentException("La posición (" + fila + ", " + columna + ") no existe en la tabla");
+      throw new IllegalArgumentException("La posición (" + fila + ", " + columna + ") no existe en el tablero");
     }
   }
 }

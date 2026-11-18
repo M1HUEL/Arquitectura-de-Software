@@ -344,7 +344,7 @@ public class Dominio implements IReceptorExterno {
       if (contieneNombre(humanos, jugador.obtenerNombre())) {
         continue;
       }
-      if (!jugador.obtenerTabla().contiene(carta)) {
+      if (!jugador.obtenerTablero().contiene(carta)) {
         continue;
       }
       try {
@@ -507,11 +507,11 @@ public class Dominio implements IReceptorExterno {
 
   private JugadorMensaje convertirJugador(Jugador jugador) {
     List<CartaMensaje> cartas = new ArrayList<>();
-    for (Casilla casilla : jugador.obtenerTabla().obtenerCasillas()) {
+    for (Casilla casilla : jugador.obtenerTablero().obtenerCasillas()) {
       cartas.add(convertirCarta(casilla.obtenerCarta()));
     }
     List<Integer> marcadas = new ArrayList<>();
-    for (Carta carta : jugador.obtenerTabla().obtenerCartasMarcadas()) {
+    for (Carta carta : jugador.obtenerTablero().obtenerCartasMarcadas()) {
       marcadas.add(carta.obtenerId());
     }
     return new JugadorMensaje(

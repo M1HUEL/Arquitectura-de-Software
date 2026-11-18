@@ -62,7 +62,7 @@ public final class Partida {
       if (!nombres.add(limpio.toLowerCase(Locale.ROOT))) {
         throw new IllegalArgumentException("No puede haber jugadores con el mismo nombre");
       }
-      jugadores.add(new Jugador(limpio, Tabla.generar(aleatorio)));
+      jugadores.add(new Jugador(limpio, Tablero.generar(aleatorio)));
     }
     return new Partida(UUID.randomUUID().toString(), jugadores, Griton.completo(aleatorio), tipoVictoria);
   }
@@ -136,13 +136,13 @@ public final class Partida {
     if (!griton.fueGritada(carta)) {
       throw new IllegalArgumentException("La carta todavía no se ha cantado");
     }
-    if (!participante.obtenerTabla().contiene(carta)) {
-      throw new IllegalArgumentException("El jugador no tiene esa carta en su tabla");
+    if (!participante.obtenerTablero().contiene(carta)) {
+      throw new IllegalArgumentException("El jugador no tiene esa carta en su tablero");
     }
     boolean marcada = participante.marcar(carta);
     if (marcada) {
       participante.sumarPunto();
-      if (participante.obtenerTabla().tieneTablaLlena()) {
+      if (participante.obtenerTablero().tieneTableroLleno()) {
         cartaDeTableroLleno.putIfAbsent(
           participante.obtenerId(), griton.obtenerCartasGritadas().size());
       }

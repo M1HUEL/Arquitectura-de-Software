@@ -4,7 +4,7 @@ public enum TipoVictoria {
   CHORRO("Chorro"),
   CUATRO_ESQUINAS("Cuatro esquinas"),
   CENTRO("Centro"),
-  TABLA_LLENA("Tabla llena");
+  TABLA_LLENA("Tablero lleno");
 
   private final String descripcion;
 

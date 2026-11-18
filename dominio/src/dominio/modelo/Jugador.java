@@ -9,17 +9,17 @@ public final class Jugador {
 
   private final String id;
   private final String nombre;
-  private final Tabla tabla;
+  private final Tablero tablero;
   private final Set<TipoVictoria> patronesPuntuados = EnumSet.noneOf(TipoVictoria.class);
   private int puntos;
 
   public static final int PUNTOS_POR_PATRON = 5;
 
-  public Jugador(String nombre, Tabla tabla) {
-    this(UUID.randomUUID().toString(), nombre, tabla);
+  public Jugador(String nombre, Tablero tablero) {
+    this(UUID.randomUUID().toString(), nombre, tablero);
   }
 
-  public Jugador(String id, String nombre, Tabla tabla) {
+  public Jugador(String id, String nombre, Tablero tablero) {
     if (id == null || id.isBlank()) {
       throw new IllegalArgumentException("El id del jugador no puede estar vacío");
     }
@@ -28,7 +28,7 @@ public final class Jugador {
     }
     this.id = id.trim();
     this.nombre = nombre.trim();
-    this.tabla = Objects.requireNonNull(tabla, "tabla");
+    this.tablero = Objects.requireNonNull(tablero, "tablero");
   }
 
   public String obtenerId() {
@@ -39,20 +39,20 @@ public final class Jugador {
     return nombre;
   }
 
-  public Tabla obtenerTabla() {
-    return tabla;
+  public Tablero obtenerTablero() {
+    return tablero;
   }
 
   boolean marcar(Carta carta) {
-    return tabla.marcar(carta);
+    return tablero.marcar(carta);
   }
 
   public boolean tieneLoteria(TipoVictoria tipoVictoria) {
-    return tabla.cumple(tipoVictoria);
+    return tablero.cumple(tipoVictoria);
   }
 
   public int obtenerAciertos() {
-    return tabla.obtenerAciertos();
+    return tablero.obtenerAciertos();
   }
 
   public void sumarPunto() {

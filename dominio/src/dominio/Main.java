@@ -8,7 +8,7 @@ import dominio.modelo.EstadoPartida;
 import dominio.modelo.Griton;
 import dominio.modelo.Jugador;
 import dominio.modelo.Partida;
-import dominio.modelo.Tabla;
+import dominio.modelo.Tablero;
 import dominio.modelo.TipoVictoria;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -34,7 +34,7 @@ public final class Main {
   private static void ejecutarPruebas() {
     verificarCatalogo();
     verificarRevolver();
-    verificarTabla();
+    verificarTablero();
     verificarBaraja();
     verificarGriton();
     verificarPartida();
@@ -124,56 +124,56 @@ public final class Main {
     afirmar(primera.obtenerCartasRestantes().equals(segunda.obtenerCartasRestantes()), "Revolver debe ser determinista con la misma semilla");
   }
 
-  private static void verificarTabla() {
-    Tabla vacia = tablaDesde(1);
-    afirmar(!vacia.tieneLinea(), "Una tabla sin marcas no puede tener línea");
-    afirmar(vacia.obtenerAciertos() == 0, "Una tabla nueva debe tener cero aciertos");
+  private static void verificarTablero() {
+    Tablero vacia = tableroDesde(1);
+    afirmar(!vacia.tieneLinea(), "Un tablero sin marcas no puede tener línea");
+    afirmar(vacia.obtenerAciertos() == 0, "Un tablero nuevo debe tener cero aciertos");
 
-    Tabla fila = tablaDesde(1);
+    Tablero fila = tableroDesde(1);
     marcar(fila, 1, 2, 3, 4);
     afirmar(fila.tieneLinea(), "Cuatro cartas de una fila deben formar línea");
-    afirmar(fila.cumple(TipoVictoria.CHORRO), "La tabla debe cumplir la victoria por línea");
+    afirmar(fila.cumple(TipoVictoria.CHORRO), "El tablero debe cumplir la victoria por línea");
 
-    Tabla columna = tablaDesde(1);
+    Tablero columna = tableroDesde(1);
     marcar(columna, 1, 5, 9, 13);
     afirmar(columna.tieneLinea(), "Cuatro cartas de una columna deben formar línea");
 
-    Tabla diagonal = tablaDesde(1);
+    Tablero diagonal = tableroDesde(1);
     marcar(diagonal, 1, 6, 11, 16);
     afirmar(diagonal.tieneLinea(), "La diagonal principal debe formar línea");
 
-    Tabla diagonalInversa = tablaDesde(1);
+    Tablero diagonalInversa = tableroDesde(1);
     marcar(diagonalInversa, 4, 7, 10, 13);
     afirmar(diagonalInversa.tieneLinea(), "La diagonal inversa debe formar línea");
 
-    Tabla centro = tablaDesde(1);
+    Tablero centro = tableroDesde(1);
     marcar(centro, 6, 7, 10, 11);
     afirmar(centro.tieneCentro(), "El bloque central de 2x2 debe formar centro");
-    afirmar(centro.cumple(TipoVictoria.CENTRO), "La tabla debe cumplir la victoria por centro");
+    afirmar(centro.cumple(TipoVictoria.CENTRO), "El tablero debe cumplir la victoria por centro");
 
-    Tabla esquinas = tablaDesde(1);
+    Tablero esquinas = tableroDesde(1);
     marcar(esquinas, 1, 4, 13, 16);
     afirmar(esquinas.tieneCuatroEsquinas(), "Las cuatro esquinas deben estar marcadas");
-    afirmar(esquinas.cumple(TipoVictoria.CUATRO_ESQUINAS), "La tabla debe cumplir la victoria por esquinas");
+    afirmar(esquinas.cumple(TipoVictoria.CUATRO_ESQUINAS), "El tablero debe cumplir la victoria por esquinas");
 
-    Tabla llena = tablaDesde(1);
+    Tablero lleno = tableroDesde(1);
     for (int id = 1; id <= 16; id++) {
-      afirmar(marcarTabla(llena, carta(id)), "La carta " + id + " debe pertenecer a la tabla");
+      afirmar(marcarTablero(lleno, carta(id)), "La carta " + id + " debe pertenecer al tablero");
     }
-    afirmar(llena.tieneTablaLlena(), "La tabla con 16 marcas debe estar llena");
-    afirmar(llena.cumple(TipoVictoria.TABLA_LLENA), "La tabla debe cumplir la victoria por tabla llena");
-    afirmar(llena.obtenerCartasMarcadas().size() == 16, "Deben existir 16 cartas marcadas");
+    afirmar(lleno.tieneTableroLleno(), "El tablero con 16 marcas debe estar lleno");
+    afirmar(lleno.cumple(TipoVictoria.TABLA_LLENA), "El tablero debe cumplir la victoria por tablero lleno");
+    afirmar(lleno.obtenerCartasMarcadas().size() == 16, "Deben existir 16 cartas marcadas");
 
-    Tabla generada = Tabla.generar(new Random(7L));
-    afirmar(generada.obtenerCartas().size() == 16, "La tabla generada debe tener 16 cartas");
-    afirmar(new HashSet<>(generada.obtenerCartas()).size() == 16, "La tabla generada no debe repetir cartas");
+    Tablero generada = Tablero.generar(new Random(7L));
+    afirmar(generada.obtenerCartas().size() == 16, "El tablero generado debe tener 16 cartas");
+    afirmar(new HashSet<>(generada.obtenerCartas()).size() == 16, "El tablero generado no debe repetir cartas");
 
-    afirmar(!marcarTabla(vacia, carta(54)), "No se puede marcar una carta que no está en la tabla");
+    afirmar(!marcarTablero(vacia, carta(54)), "No se puede marcar una carta que no está en el tablero");
     afirmar(!vacia.estaMarcada(0, 0), "La posición debe iniciar sin marca");
-    afirmar(!desmarcarTabla(vacia, carta(54)), "No se puede desmarcar una carta ausente");
+    afirmar(!desmarcarTablero(vacia, carta(54)), "No se puede desmarcar una carta ausente");
 
-    Tabla tablaCasillas = tablaDesde(1);
-    Casilla casilla = tablaCasillas.obtenerCasilla(0, 0);
+    Tablero tableroCasillas = tableroDesde(1);
+    Casilla casilla = tableroCasillas.obtenerCasilla(0, 0);
     afirmar(casilla.obtenerFila() == 0, "La casilla debe conservar su fila");
     afirmar(casilla.obtenerColumna() == 0, "La casilla debe conservar su columna");
     afirmar(casilla.obtenerCarta().equals(carta(1)), "La casilla debe conservar su carta");
@@ -183,19 +183,19 @@ public final class Main {
     afirmar(marcarCasilla(casilla), "La casilla debe marcarse la primera vez");
     afirmar(casilla.estaMarcada(), "La casilla debe quedar marcada");
     afirmar(!marcarCasilla(casilla), "La casilla no debe marcarse dos veces");
-    afirmar(tablaCasillas.estaMarcada(0, 0), "La tabla debe reflejar la marca de la casilla");
-    afirmar(tablaCasillas.obtenerCasillas().size() == 16, "La tabla debe exponer sus 16 casillas");
-    afirmar(tablaCasillas.obtenerCasillasMarcadas().size() == 1, "La tabla debe exponer una casilla marcada");
+    afirmar(tableroCasillas.estaMarcada(0, 0), "El tablero debe reflejar la marca de la casilla");
+    afirmar(tableroCasillas.obtenerCasillas().size() == 16, "El tablero debe exponer sus 16 casillas");
+    afirmar(tableroCasillas.obtenerCasillasMarcadas().size() == 1, "El tablero debe exponer una casilla marcada");
     afirmar(desmarcarCasilla(casilla), "La casilla debe desmarcarse");
     afirmar(!desmarcarCasilla(casilla), "La casilla no debe desmarcarse dos veces");
-    afirmar(!tablaCasillas.estaMarcada(0, 0), "La tabla debe reflejar el desmarque de la casilla");
-    afirmar(marcarTabla(tablaCasillas, carta(1)), "La tabla debe marcar una carta propia");
-    reiniciarTabla(tablaCasillas);
-    afirmar(tablaCasillas.obtenerAciertos() == 0, "Reiniciar debe quitar todas las marcas");
+    afirmar(!tableroCasillas.estaMarcada(0, 0), "El tablero debe reflejar el desmarque de la casilla");
+    afirmar(marcarTablero(tableroCasillas, carta(1)), "El tablero debe marcar una carta propia");
+    reiniciarTablero(tableroCasillas);
+    afirmar(tableroCasillas.obtenerAciertos() == 0, "Reiniciar debe quitar todas las marcas");
 
     try {
-      tablaCasillas.obtenerCasilla(4, 0);
-      fallar("Una posición fuera de la tabla debe lanzar una excepción");
+      tableroCasillas.obtenerCasilla(4, 0);
+      fallar("Una posición fuera del tablero debe lanzar una excepción");
     } catch (IllegalArgumentException esperada) {
       verificar();
     }
@@ -206,8 +206,8 @@ public final class Main {
         repetidas.add(carta(id));
       }
       repetidas.add(carta(15));
-      new Tabla(repetidas);
-      fallar("La tabla debió rechazar cartas repetidas");
+      new Tablero(repetidas);
+      fallar("El tablero debió rechazar cartas repetidas");
     } catch (IllegalArgumentException esperada) {
       verificar();
     }
@@ -332,7 +332,7 @@ public final class Main {
       }
     }
 
-    Jugador externo = new Jugador("Externo", tablaDesde(39));
+    Jugador externo = new Jugador("Externo", tableroDesde(39));
     try {
       partida.marcar(externo, primera);
       fallar("Un jugador externo no puede marcar en la partida");
@@ -352,10 +352,10 @@ public final class Main {
     partida.reanudar();
     afirmar(partida.estaEnCurso(), "La partida debe reanudarse");
 
-    Jugador ana = new Jugador("Ana", tablaDesde(1));
-    Jugador luis = new Jugador("Luis", tablaDesde(17));
+    Jugador ana = new Jugador("Ana", tableroDesde(1));
+    Jugador luis = new Jugador("Luis", tableroDesde(17));
     List<Carta> mazo = new ArrayList<>();
-    for (int id = Tabla.TOTAL_CARTAS; id >= 1; id--) {
+    for (int id = Tablero.TOTAL_CARTAS; id >= 1; id--) {
       mazo.add(carta(id));
     }
     Partida victoria = new Partida(
@@ -365,7 +365,7 @@ public final class Main {
       TipoVictoria.TABLA_LLENA
     );
     victoria.iniciar();
-    for (int id = 1; id <= Tabla.TOTAL_CARTAS; id++) {
+    for (int id = 1; id <= Tablero.TOTAL_CARTAS; id++) {
       Carta cantada = victoria.cantarSiguiente();
       afirmar(cantada.obtenerId() == id, "Las cartas deben cantarse en el orden esperado");
       afirmar(victoria.marcar(ana, cantada), "Ana debe marcar la carta cantada");
@@ -409,7 +409,7 @@ public final class Main {
 
     Partida sinCartas = new Partida(
       "partida-sin-cartas",
-      List.of(new Jugador("Ana", tablaDesde(1))),
+      List.of(new Jugador("Ana", tableroDesde(1))),
       new Griton(new Baraja(List.of(carta(1))), new Random(1L)),
       TipoVictoria.CHORRO
     );
@@ -443,8 +443,8 @@ public final class Main {
   }
 
   private static void verificarGritoDentroDeVentana() {
-    Jugador ana = new Jugador("Ana", tablaDesde(1));
-    Jugador luis = new Jugador("Luis", tablaDesde(17));
+    Jugador ana = new Jugador("Ana", tableroDesde(1));
+    Jugador luis = new Jugador("Luis", tableroDesde(17));
     List<Carta> mazo = new ArrayList<>();
     for (int id = 18; id >= 1; id--) {
       mazo.add(carta(id));
@@ -456,20 +456,20 @@ public final class Main {
       TipoVictoria.TABLA_LLENA
     );
     partida.iniciar();
-    for (int id = 1; id <= Tabla.TOTAL_CARTAS; id++) {
+    for (int id = 1; id <= Tablero.TOTAL_CARTAS; id++) {
       partida.marcar(ana, partida.cantarSiguiente());
     }
-    afirmar(ana.obtenerTabla().tieneTablaLlena(), "El tablero de Ana debe estar lleno");
+    afirmar(ana.obtenerTablero().tieneTableroLleno(), "El tablero de Ana debe estar lleno");
     afirmar(partida.gritarLoteria(ana), "El grito en la carta que llena el tablero debe valer");
 
     Partida vencida = new Partida(
       "grito-vencido",
-      List.of(new Jugador("Ana", tablaDesde(1))),
+      List.of(new Jugador("Ana", tableroDesde(1))),
       new Griton(new Baraja(mazo), new Random(1L)),
       TipoVictoria.TABLA_LLENA
     );
     vencida.iniciar();
-    for (int id = 1; id <= Tabla.TOTAL_CARTAS; id++) {
+    for (int id = 1; id <= Tablero.TOTAL_CARTAS; id++) {
       vencida.marcar(vencida.obtenerJugadores().get(0), vencida.cantarSiguiente());
     }
     vencida.cantarSiguiente();
@@ -479,10 +479,10 @@ public final class Main {
   }
 
   private static void verificarPrimerGritoGana() {
-    Jugador ana = new Jugador("Ana", tablaDesde(1));
-    Jugador luis = new Jugador("Luis", tablaDesde(1));
+    Jugador ana = new Jugador("Ana", tableroDesde(1));
+    Jugador luis = new Jugador("Luis", tableroDesde(1));
     List<Carta> mazo = new ArrayList<>();
-    for (int id = Tabla.TOTAL_CARTAS; id >= 1; id--) {
+    for (int id = Tablero.TOTAL_CARTAS; id >= 1; id--) {
       mazo.add(carta(id));
     }
     Partida partida = new Partida(
@@ -492,7 +492,7 @@ public final class Main {
       TipoVictoria.TABLA_LLENA
     );
     partida.iniciar();
-    for (int id = 1; id <= Tabla.TOTAL_CARTAS; id++) {
+    for (int id = 1; id <= Tablero.TOTAL_CARTAS; id++) {
       Carta cantada = partida.cantarSiguiente();
       partida.marcar(ana, cantada);
       partida.marcar(luis, cantada);
@@ -502,7 +502,7 @@ public final class Main {
   }
 
   private static void verificarPuntos() {
-    Jugador ana = new Jugador("Ana", tablaDesde(1));
+    Jugador ana = new Jugador("Ana", tableroDesde(1));
     Partida partida = new Partida(
       "puntos",
       List.of(ana),
@@ -522,8 +522,8 @@ public final class Main {
   }
 
   private static void verificarGanadorPorPuntos() {
-    Jugador ana = new Jugador("Ana", tablaDesde(1));
-    Jugador luis = new Jugador("Luis", tablaDesde(17));
+    Jugador ana = new Jugador("Ana", tableroDesde(1));
+    Jugador luis = new Jugador("Luis", tableroDesde(17));
     Partida partida = new Partida(
       "ganador-puntos",
       List.of(ana, luis),
@@ -538,8 +538,8 @@ public final class Main {
     afirmar(luis.obtenerPuntos() == 0, "Luis debe tener cero puntos");
     afirmar(partida.obtenerGanadores().contains(ana), "Ana debe ganar por puntos");
 
-    Jugador carlos = new Jugador("Carlos", tablaDesde(1));
-    Jugador diana = new Jugador("Diana", tablaDesde(1));
+    Jugador carlos = new Jugador("Carlos", tableroDesde(1));
+    Jugador diana = new Jugador("Diana", tableroDesde(1));
     Partida empatada = new Partida(
       "empate-puntos",
       List.of(carlos, diana),
@@ -556,9 +556,9 @@ public final class Main {
   }
 
   private static void verificarEncapsulamiento() {
-    afirmarNoPublico(Tabla.class, "marcar", Carta.class);
-    afirmarNoPublico(Tabla.class, "desmarcar", Carta.class);
-    afirmarNoPublico(Tabla.class, "reiniciar");
+    afirmarNoPublico(Tablero.class, "marcar", Carta.class);
+    afirmarNoPublico(Tablero.class, "desmarcar", Carta.class);
+    afirmarNoPublico(Tablero.class, "reiniciar");
     afirmarNoPublico(Casilla.class, "marcar");
     afirmarNoPublico(Casilla.class, "desmarcar");
     afirmarNoPublico(Casilla.class, "reiniciar");
@@ -569,41 +569,41 @@ public final class Main {
     Partida primera = Partida.crear(List.of("Ana", "Luis"), TipoVictoria.CHORRO, new Random(123L));
     Partida segunda = Partida.crear(List.of("Ana", "Luis"), TipoVictoria.CHORRO, new Random(123L));
     for (int i = 0; i < primera.obtenerJugadores().size(); i++) {
-      List<Carta> tablaPrimera = primera.obtenerJugadores().get(i).obtenerTabla().obtenerCartas();
-      List<Carta> tablaSegunda = segunda.obtenerJugadores().get(i).obtenerTabla().obtenerCartas();
-      afirmar(tablaPrimera.equals(tablaSegunda), "Las tablas deben ser deterministas con la misma semilla");
+      List<Carta> tableroPrimera = primera.obtenerJugadores().get(i).obtenerTablero().obtenerCartas();
+      List<Carta> tableroSegunda = segunda.obtenerJugadores().get(i).obtenerTablero().obtenerCartas();
+      afirmar(tableroPrimera.equals(tableroSegunda), "Los tableros deben ser deterministas con la misma semilla");
     }
     afirmar(primera.obtenerCartasRestantes().equals(segunda.obtenerCartasRestantes()), "El mazo debe ser determinista con la misma semilla");
   }
 
-  private static void marcar(Tabla tabla, int... ids) {
+  private static void marcar(Tablero tablero, int... ids) {
     for (int id : ids) {
-      afirmar(marcarTabla(tabla, carta(id)), "La carta " + id + " debe pertenecer a la tabla");
+      afirmar(marcarTablero(tablero, carta(id)), "La carta " + id + " debe pertenecer al tablero");
     }
   }
 
-  private static Tabla tablaDesde(int inicio) {
+  private static Tablero tableroDesde(int inicio) {
     List<Carta> cartas = new ArrayList<>();
     for (int id = inicio; id < inicio + 16; id++) {
       cartas.add(carta(id));
     }
-    return new Tabla(cartas);
+    return new Tablero(cartas);
   }
 
   private static Carta carta(int id) {
     return CatalogoCartas.obtenerPorId(id);
   }
 
-  private static boolean marcarTabla(Tabla tabla, Carta carta) {
-    return (Boolean) invocar(Tabla.class, tabla, "marcar", new Class<?>[]{Carta.class}, carta);
+  private static boolean marcarTablero(Tablero tablero, Carta carta) {
+    return (Boolean) invocar(Tablero.class, tablero, "marcar", new Class<?>[]{Carta.class}, carta);
   }
 
-  private static boolean desmarcarTabla(Tabla tabla, Carta carta) {
-    return (Boolean) invocar(Tabla.class, tabla, "desmarcar", new Class<?>[]{Carta.class}, carta);
+  private static boolean desmarcarTablero(Tablero tablero, Carta carta) {
+    return (Boolean) invocar(Tablero.class, tablero, "desmarcar", new Class<?>[]{Carta.class}, carta);
   }
 
-  private static void reiniciarTabla(Tabla tabla) {
-    invocar(Tabla.class, tabla, "reiniciar", new Class<?>[0]);
+  private static void reiniciarTablero(Tablero tablero) {
+    invocar(Tablero.class, tablero, "reiniciar", new Class<?>[0]);
   }
 
   private static boolean marcarCasilla(Casilla casilla) {
