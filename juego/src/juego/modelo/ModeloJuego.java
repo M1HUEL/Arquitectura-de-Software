@@ -134,7 +134,7 @@ public class ModeloJuego implements Modelo {
     }
   }
 
-  public void notificarObservadores() {
+  private void notificarObservadores() {
     for (Observador observador : observadores) {
       observador.actualizar(this);
     }
