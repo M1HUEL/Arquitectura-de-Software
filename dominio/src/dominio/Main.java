@@ -47,13 +47,14 @@ public final class Main {
     Random generador = new Random(2026L);
     Partida partida = Partida.crear(
       List.of("Ana", "Luis", "Sofía"),
-      TipoVictoria.CHORRO,
+      TipoVictoria.TABLA_LLENA,
       generador
     );
     partida.iniciar();
 
     System.out.println("Partida " + partida.obtenerId());
     System.out.println("Victoria: " + partida.obtenerTipoVictoria().obtenerDescripcion());
+    System.out.println("Patrones: +" + Jugador.PUNTOS_POR_PATRON + " puntos");
 
     while (partida.puedeCantar() && !partida.estaFinalizada()) {
       Carta carta = partida.cantarSiguiente();
@@ -352,17 +353,18 @@ public final class Main {
 
     Jugador ana = new Jugador("Ana", tablaDesde(1));
     Jugador luis = new Jugador("Luis", tablaDesde(17));
+    List<Carta> mazo = new ArrayList<>();
+    for (int id = Tabla.TOTAL_CARTAS; id >= 1; id--) {
+      mazo.add(carta(id));
+    }
     Partida victoria = new Partida(
       "partida-victoria",
       List.of(ana, luis),
-      new Griton(
-        new Baraja(List.of(carta(4), carta(3), carta(2), carta(1))),
-        new Random(1L)
-      ),
-      TipoVictoria.CHORRO
+      new Griton(new Baraja(mazo), new Random(1L)),
+      TipoVictoria.TABLA_LLENA
     );
     victoria.iniciar();
-    for (int id = 1; id <= 4; id++) {
+    for (int id = 1; id <= Tabla.TOTAL_CARTAS; id++) {
       Carta cantada = victoria.cantarSiguiente();
       afirmar(cantada.obtenerId() == id, "Las cartas deben cantarse en el orden esperado");
       afirmar(victoria.marcar(ana, cantada), "Ana debe marcar la carta cantada");
@@ -373,8 +375,8 @@ public final class Main {
         verificar();
       }
     }
-    afirmar(victoria.obtenerJugadoresConLoteria().contains(ana), "Ana debe tener lotería");
-    afirmar(!victoria.obtenerJugadoresConLoteria().contains(luis), "Luis no debe tener lotería");
+    afirmar(victoria.obtenerJugadoresConLoteria().contains(ana), "Ana debe tener el tablero lleno");
+    afirmar(!victoria.obtenerJugadoresConLoteria().contains(luis), "Luis no debe tener el tablero lleno");
     afirmar(victoria.gritarLoteria(ana), "Ana debe ganar al gritar lotería");
     afirmar(victoria.estaFinalizada(), "La partida debe finalizar al ganar");
     afirmar(victoria.obtenerGanadores().contains(ana), "Ana debe quedar registrada como ganadora");

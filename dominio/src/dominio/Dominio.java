@@ -209,7 +209,7 @@ public class Dominio implements IReceptorExterno {
     } else if (contenido instanceof ComandoPatron comando) {
       cambiarPatron(comando.jugador(), comando.patron());
     } else if (contenido instanceof ComandoVictoria comando) {
-      gritarVictoria(comando.jugador(), comando.patron());
+      gritarVictoria(comando.jugador());
     } else if (contenido instanceof ComandoCerrar) {
       finalizarPartida();
     } else {
@@ -294,7 +294,7 @@ public class Dominio implements IReceptorExterno {
         }
       }
     }
-    partida = Partida.crear(nombres, TipoVictoria.CHORRO, aleatorio);
+    partida = Partida.crear(nombres, TipoVictoria.TABLA_LLENA, aleatorio);
     partida.iniciar();
     patronActual = PATRON_POR_DEFECTO;
     detenerTemporizador();
@@ -401,7 +401,7 @@ public class Dominio implements IReceptorExterno {
     }
   }
 
-  private void gritarVictoria(String nombreJugador, String patron) {
+  private void gritarVictoria(String nombreJugador) {
     if (partida == null || !partida.estaEnCurso()) {
       publicar(new EventoError("La partida no está en curso"));
       return;
@@ -412,12 +412,10 @@ public class Dominio implements IReceptorExterno {
       return;
     }
     try {
-      TipoVictoria tipo = convertirTipoVictoria(patron);
-      if (!partida.gritarLoteria(jugador, tipo)) {
-        publicar(new EventoError("La victoria no es válida"));
+      if (!partida.gritarLoteria(jugador)) {
+        publicar(new EventoError("El tablero todavía no está lleno"));
         return;
       }
-      patronActual = tipo.name();
       detenerTemporizador();
       publicar(new EventoVictoria(estadoJuego()));
     } catch (RuntimeException e) {

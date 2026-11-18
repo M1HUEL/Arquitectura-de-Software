@@ -122,16 +122,11 @@ public final class Partida {
   }
 
   public boolean gritarLoteria(Jugador jugador) {
-    return gritarLoteria(jugador, tipoVictoria);
-  }
-
-  public boolean gritarLoteria(Jugador jugador, TipoVictoria tipoVictoria) {
     Objects.requireNonNull(jugador, "jugador");
-    Objects.requireNonNull(tipoVictoria, "tipoVictoria");
     exigirEnCurso();
     Jugador participante = buscarJugador(jugador.obtenerId())
       .orElseThrow(() -> new IllegalStateException("El jugador no participa en la partida"));
-    if (!participante.tieneLoteria(tipoVictoria)) {
+    if (!participante.tieneLoteria(TipoVictoria.TABLA_LLENA)) {
       return false;
     }
     if (!ganadores.contains(participante)) {
@@ -152,7 +147,7 @@ public final class Partida {
 
   public List<Jugador> obtenerJugadoresConLoteria() {
     return jugadores.stream()
-      .filter(jugador -> jugador.tieneLoteria(tipoVictoria))
+      .filter(jugador -> jugador.tieneLoteria(TipoVictoria.TABLA_LLENA))
       .toList();
   }
 
