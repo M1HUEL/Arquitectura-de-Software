@@ -13,8 +13,9 @@ public class Mazo {
 
   public static List<Carta> crearCartas() {
     List<Carta> cartas = new ArrayList<>();
-    for (String nombre : NOMBRES) {
-      cartas.add(new Carta(nombre, crearNombreImagen(nombre)));
+    for (int i = 0; i < NOMBRES.size(); i++) {
+      String nombre = NOMBRES.get(i);
+      cartas.add(new Carta(i + 1, nombre, crearNombreImagen(nombre)));
     }
     return cartas;
   }
@@ -24,12 +25,17 @@ public class Mazo {
       throw new IllegalArgumentException("El nombre de la carta no puede estar vacío");
     }
     String buscado = nombre.trim();
-    for (String actual : NOMBRES) {
+    for (int i = 0; i < NOMBRES.size(); i++) {
+      String actual = NOMBRES.get(i);
       if (actual.equalsIgnoreCase(buscado)) {
-        return new Carta(actual, crearNombreImagen(actual));
+        return new Carta(i + 1, actual, crearNombreImagen(actual));
       }
     }
-    return new Carta(buscado, "");
+    return new Carta(0, buscado, "");
+  }
+
+  public static Carta crearCarta(int id, String nombre) {
+    return new Carta(id, nombre, crearNombreImagen(nombre));
   }
 
   public static int obtenerTotal() {

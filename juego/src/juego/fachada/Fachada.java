@@ -1,10 +1,6 @@
 package juego.fachada;
 
-import java.util.List;
 import juego.modelo.Carta;
-import juego.modelo.EstadoPartida;
-import juego.modelo.Jugador;
-import juego.modelo.Mensaje;
 import juego.modelo.Patron;
 
 public interface Fachada {
@@ -13,33 +9,11 @@ public interface Fachada {
 
   void cerrar();
 
-  default void desconectar() {
-    cerrar();
-  }
+  void desconectar();
 
-  void agregarOyente(Runnable oyente);
+  void seleccionarCasilla(Carta carta);
 
-  void eliminarOyente(Runnable oyente);
+  void seleccionarPatron(Patron patron);
 
-  String obtenerJugadorLocal();
-
-  List<Jugador> obtenerJugadores();
-
-  List<Carta> obtenerCartasCantadas();
-
-  int obtenerNumeroCartasRestantes();
-
-  EstadoPartida obtenerEstadoPartida();
-
-  String obtenerGanador();
-
-  Patron obtenerPatron();
-
-  String obtenerUltimoError();
-
-  Mensaje seleccionarCasilla(Jugador jugador, Carta carta);
-
-  Mensaje seleccionarPatron(Jugador jugador, Patron patron);
-
-  Mensaje seleccionarVictoria(Jugador jugador, Patron patron);
+  void seleccionarVictoria(Patron patron);
 }

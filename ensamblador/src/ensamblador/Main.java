@@ -13,6 +13,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import juego.controlador.ControladorJuego;
 import juego.fachada.FachadaBroker;
+import juego.fachada.ManejadorSocket;
 import juego.modelo.ModeloJuego;
 import juego.vista.VistaJuego;
 import serializador.Serializador;
@@ -121,23 +122,28 @@ public class Main {
     int puertoCliente = entero(args, 2, PUERTO_CLIENTE);
     int puertoBroker = entero(args, 3, PUERTO_BROKER);
     String hostBroker = args.length > 4 ? args[4] : HOST;
-    FachadaBroker fachada = new FachadaBroker(
-      nombre, hostBroker, puertoBroker, TEMA_COMANDOS, TEMA_EVENTOS, puertoCliente);
+    Serializador serializador = new Serializador(PATRON_FILTRO);
     SwingUtilities.invokeLater(() -> {
+      FachadaBroker fachada = new FachadaBroker(
+        nombre, hostBroker, puertoBroker, TEMA_COMANDOS, serializador, DispatcherFactory.crear());
       ModeloJuego modelo = new ModeloJuego(nombre, fachada);
+      ManejadorSocket manejador = new ManejadorSocket(puertoCliente, serializador, modelo);
       ControladorJuego controlador = new ControladorJuego(modelo);
       VistaJuego vista = new VistaJuego(modelo, controlador);
       vista.addWindowListener(new WindowAdapter() {
         @Override
         public void windowClosed(WindowEvent evento) {
+          manejador.detener();
           System.exit(0);
         }
       });
       modelo.agregarObservador(vista);
-      vista.setVisible(true);
       try {
+        manejador.iniciar();
+        vista.setVisible(true);
         modelo.iniciar();
       } catch (RuntimeException e) {
+        manejador.detener();
         JOptionPane.showMessageDialog(
           vista,
           "No se pudo conectar el cliente: " + e.getMessage(),

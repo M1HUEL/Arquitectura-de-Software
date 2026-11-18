@@ -10,9 +10,15 @@ public class ModeloJuego implements Modelo {
   private final String jugadorLocal;
   private final Fachada fachada;
   private final List<Observador> observadores = new CopyOnWriteArrayList<>();
-  private Mensaje mensaje;
-  private final Runnable oyente = this::notificarObservadores;
-  private boolean conectado;
+
+  private volatile List<Jugador> jugadores = List.of();
+  private volatile List<Carta> cartasCantadas = List.of();
+  private volatile int restantes;
+  private volatile EstadoPartida estadoPartida = EstadoPartida.NO_INICIADA;
+  private volatile String ganador = "";
+  private volatile String ultimoError = "";
+  private volatile Patron patron = Patron.CHORRO;
+  private volatile Mensaje mensaje;
 
   public ModeloJuego(String jugadorLocal, Fachada fachada) {
     if (jugadorLocal == null || jugadorLocal.isBlank()) {
@@ -26,39 +32,100 @@ public class ModeloJuego implements Modelo {
   }
 
   public void iniciar() {
-    if (!conectado) {
-      fachada.agregarOyente(oyente);
-      conectado = true;
-    }
     fachada.iniciar();
   }
 
+  @Override
   public void cerrar() {
-    if (conectado) {
-      fachada.eliminarOyente(oyente);
-      conectado = false;
-    }
     fachada.cerrar();
   }
 
+  @Override
   public void desconectar() {
-    if (conectado) {
-      fachada.eliminarOyente(oyente);
-      conectado = false;
-    }
     fachada.desconectar();
   }
 
+  public void actualizar(
+    EstadoPartida estado,
+    Patron patron,
+    List<Jugador> jugadores,
+    List<Carta> cartasCantadas,
+    int restantes,
+    String ganador
+  ) {
+    this.estadoPartida = estado == null ? EstadoPartida.NO_INICIADA : estado;
+    this.patron = patron == null ? Patron.CHORRO : patron;
+    this.jugadores = jugadores == null ? List.of() : List.copyOf(jugadores);
+    this.cartasCantadas = cartasCantadas == null ? List.of() : List.copyOf(cartasCantadas);
+    this.restantes = Math.max(0, restantes);
+    this.ganador = ganador == null ? "" : ganador;
+    this.ultimoError = "";
+    notificarObservadores();
+  }
+
+  public void registrarError(String mensaje) {
+    this.ultimoError = mensaje == null ? "" : mensaje;
+    notificarObservadores();
+  }
+
   public void seleccionarCasilla(Carta carta, Jugador jugador) {
-    notificarObservadores(fachada.seleccionarCasilla(jugador, carta));
+    Mensaje resultado = validarCasilla(carta, jugador);
+    if (resultado == Mensaje.CASILLA_VALIDA) {
+      fachada.seleccionarCasilla(carta);
+    }
+    notificarObservadores(resultado);
   }
 
   public void seleccionarPatron(Jugador jugador, Patron patron) {
-    notificarObservadores(fachada.seleccionarPatron(jugador, patron));
+    Mensaje resultado = validarPatron(jugador, patron);
+    if (resultado == Mensaje.PATRON_VALIDO) {
+      fachada.seleccionarPatron(patron);
+    }
+    notificarObservadores(resultado);
   }
 
   public void seleccionarVictoria(Jugador jugador, Patron patron) {
-    notificarObservadores(fachada.seleccionarVictoria(jugador, patron));
+    Mensaje resultado = validarVictoria(jugador, patron);
+    if (resultado == Mensaje.VICTORIA_VALIDA) {
+      fachada.seleccionarVictoria(patron);
+    }
+    notificarObservadores(resultado);
+  }
+
+  private Mensaje validarCasilla(Carta carta, Jugador jugador) {
+    if (!puedeJugar(jugador) || carta == null) {
+      return Mensaje.CASILLA_INVALIDA;
+    }
+    if (!jugador.obtenerCartas().contains(carta)) {
+      return Mensaje.CASILLA_INVALIDA;
+    }
+    if (!cartasCantadas.contains(carta)) {
+      return Mensaje.CASILLA_INVALIDA;
+    }
+    if (jugador.estaSeleccionada(carta)) {
+      return Mensaje.CASILLA_INVALIDA;
+    }
+    return Mensaje.CASILLA_VALIDA;
+  }
+
+  private Mensaje validarPatron(Jugador jugador, Patron patron) {
+    if (patron == null || !puedeJugar(jugador) || !jugador.cumple(patron)) {
+      return Mensaje.PATRON_INVALIDO;
+    }
+    return Mensaje.PATRON_VALIDO;
+  }
+
+  private Mensaje validarVictoria(Jugador jugador, Patron patron) {
+    if (patron == null || !puedeJugar(jugador) || !jugador.cumple(patron)) {
+      return Mensaje.VICTORIA_INVALIDA;
+    }
+    return Mensaje.VICTORIA_VALIDA;
+  }
+
+  private boolean puedeJugar(Jugador jugador) {
+    return estadoPartida == EstadoPartida.EN_CURSO
+      && jugador != null
+      && jugador.obtenerNombre().equals(jugadorLocal);
   }
 
   public void agregarObservador(Observador observador) {
@@ -89,36 +156,36 @@ public class ModeloJuego implements Modelo {
 
   @Override
   public List<Jugador> obtenerJugadores() {
-    return fachada.obtenerJugadores();
+    return jugadores;
   }
 
   @Override
   public List<Carta> obtenerCartasCantadas() {
-    return fachada.obtenerCartasCantadas();
+    return cartasCantadas;
   }
 
   @Override
   public int obtenerNumeroCartasRestantes() {
-    return fachada.obtenerNumeroCartasRestantes();
+    return restantes;
   }
 
   @Override
   public EstadoPartida obtenerEstadoPartida() {
-    return fachada.obtenerEstadoPartida();
+    return estadoPartida;
   }
 
   @Override
   public String obtenerGanador() {
-    return fachada.obtenerGanador();
+    return ganador;
   }
 
   public Patron obtenerPatron() {
-    return fachada.obtenerPatron();
+    return patron;
   }
 
   @Override
   public String obtenerUltimoError() {
-    return fachada.obtenerUltimoError();
+    return ultimoError;
   }
 
   @Override

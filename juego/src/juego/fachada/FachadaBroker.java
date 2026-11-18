@@ -1,40 +1,19 @@
 package juego.fachada;
 
-import comun.CartaMensaje;
 import comun.ComandoCerrar;
 import comun.ComandoIniciar;
 import comun.ComandoMarcar;
 import comun.ComandoPatron;
 import comun.ComandoVictoria;
-import comun.EstadoJuego;
 import comun.EventoBroker;
-import comun.EventoCartaCantada;
-import comun.EventoError;
-import comun.EventoFin;
-import comun.EventoSincronizacion;
-import comun.EventoVictoria;
-import comun.JugadorMensaje;
 import comunicacion.Dispatcher;
 import comunicacion.DispatcherFactory;
-import comunicacion.Receptor;
-import comunicacion.api.IReceptorExterno;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import juego.modelo.Carta;
-import juego.modelo.EstadoPartida;
-import juego.modelo.Jugador;
-import juego.modelo.Mazo;
-import juego.modelo.Mensaje;
 import juego.modelo.Patron;
 import serializador.ISerializador;
 import serializador.Serializador;
 
-public class FachadaBroker implements Fachada, IReceptorExterno {
+public class FachadaBroker implements Fachada {
 
   private static final String PATRON_FILTRO = "comun.*;java.lang.*;java.util.*;!*";
 
@@ -42,30 +21,32 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
   private final String hostBroker;
   private final int puertoBroker;
   private final String temaComandos;
-  private final String temaEventos;
-  private final int puertoLocal;
   private final ISerializador serializador;
   private final Dispatcher dispatcher;
-  private final Receptor receptor;
-  private final List<Runnable> oyentes = new CopyOnWriteArrayList<>();
-  private final Map<String, Integer> idsCartas = new ConcurrentHashMap<>();
 
-  private volatile List<Jugador> jugadores = List.of();
-  private volatile List<Carta> cartasCantadas = List.of();
-  private volatile int restantes;
-  private volatile EstadoPartida estadoPartida = EstadoPartida.NO_INICIADA;
-  private volatile String ganador = "";
-  private volatile String ultimoError = "";
-  private volatile Patron patron = Patron.CHORRO;
-  private volatile boolean conectado;
+  public FachadaBroker(
+    String jugadorLocal,
+    String hostBroker,
+    int puertoBroker,
+    String temaComandos
+  ) {
+    this(
+      jugadorLocal,
+      hostBroker,
+      puertoBroker,
+      temaComandos,
+      new Serializador(PATRON_FILTRO),
+      DispatcherFactory.crear()
+    );
+  }
 
   public FachadaBroker(
     String jugadorLocal,
     String hostBroker,
     int puertoBroker,
     String temaComandos,
-    String temaEventos,
-    int puertoLocal
+    ISerializador serializador,
+    Dispatcher dispatcher
   ) {
     if (jugadorLocal == null || jugadorLocal.isBlank()) {
       throw new IllegalArgumentException("El jugador local no puede estar vacío");
@@ -79,43 +60,32 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
     if (temaComandos == null || temaComandos.isBlank()) {
       throw new IllegalArgumentException("El tema de comandos no puede estar vacío");
     }
-    if (temaEventos == null || temaEventos.isBlank()) {
-      throw new IllegalArgumentException("El tema de eventos no puede estar vacío");
+    if (serializador == null) {
+      throw new IllegalArgumentException("El serializador no puede ser nulo");
     }
-    if (puertoLocal < 0 || puertoLocal > 65535) {
-      throw new IllegalArgumentException("El puerto local no es válido: " + puertoLocal);
+    if (dispatcher == null) {
+      throw new IllegalArgumentException("El dispatcher no puede ser nulo");
     }
     this.jugadorLocal = jugadorLocal.trim();
     this.hostBroker = hostBroker.trim();
     this.puertoBroker = puertoBroker;
     this.temaComandos = temaComandos.trim();
-    this.temaEventos = temaEventos.trim();
-    this.puertoLocal = puertoLocal;
-    this.serializador = new Serializador(PATRON_FILTRO);
-    this.dispatcher = DispatcherFactory.crear();
-    this.receptor = new Receptor();
-    this.receptor.agregarReceptor(this);
+    this.serializador = serializador;
+    this.dispatcher = dispatcher;
   }
 
   @Override
   public void iniciar() {
-    if (conectado) {
+    if (dispatcher.estaActivo()) {
       return;
     }
     dispatcher.iniciar();
-    receptor.iniciar(puertoLocal);
-    if (!receptor.estaActivo()) {
-      dispatcher.detener();
-      throw new IllegalStateException(
-        "No se pudo iniciar el MVC en el puerto " + puertoLocal);
-    }
-    conectado = true;
     enviar(new ComandoIniciar(jugadorLocal));
   }
 
   @Override
   public void cerrar() {
-    if (conectado) {
+    if (dispatcher.estaActivo()) {
       enviar(new ComandoCerrar(jugadorLocal));
     }
     desconectar();
@@ -123,201 +93,28 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
 
   @Override
   public void desconectar() {
-    if (!conectado) {
-      return;
-    }
-    conectado = false;
-    receptor.detener();
     dispatcher.detener();
   }
 
   @Override
-  public void agregarOyente(Runnable oyente) {
-    if (oyente != null) {
-      oyentes.add(oyente);
+  public void seleccionarCasilla(Carta carta) {
+    if (carta != null) {
+      enviar(new ComandoMarcar(jugadorLocal, carta.obtenerId()));
     }
   }
 
   @Override
-  public void eliminarOyente(Runnable oyente) {
-    oyentes.remove(oyente);
+  public void seleccionarPatron(Patron patron) {
+    if (patron != null) {
+      enviar(new ComandoPatron(jugadorLocal, patron.name()));
+    }
   }
 
   @Override
-  public String obtenerJugadorLocal() {
-    return jugadorLocal;
-  }
-
-  @Override
-  public List<Jugador> obtenerJugadores() {
-    return jugadores;
-  }
-
-  @Override
-  public List<Carta> obtenerCartasCantadas() {
-    return cartasCantadas;
-  }
-
-  @Override
-  public int obtenerNumeroCartasRestantes() {
-    return restantes;
-  }
-
-  @Override
-  public EstadoPartida obtenerEstadoPartida() {
-    return estadoPartida;
-  }
-
-  @Override
-  public String obtenerGanador() {
-    return ganador;
-  }
-
-  @Override
-  public Patron obtenerPatron() {
-    return patron;
-  }
-
-  @Override
-  public String obtenerUltimoError() {
-    return ultimoError;
-  }
-
-  @Override
-  public Mensaje seleccionarCasilla(Jugador jugador, Carta carta) {
-    if (!puedeJugar(jugador) || carta == null) {
-      return Mensaje.CASILLA_INVALIDA;
+  public void seleccionarVictoria(Patron patron) {
+    if (patron != null) {
+      enviar(new ComandoVictoria(jugadorLocal, patron.name()));
     }
-    if (!jugador.obtenerCartas().contains(carta)) {
-      return Mensaje.CASILLA_INVALIDA;
-    }
-    if (!fueCantada(carta)) {
-      return Mensaje.CASILLA_INVALIDA;
-    }
-    if (!jugador.marcarCasilla(carta)) {
-      return Mensaje.CASILLA_INVALIDA;
-    }
-    enviar(new ComandoMarcar(jugadorLocal, idDe(carta)));
-    return Mensaje.CASILLA_VALIDA;
-  }
-
-  @Override
-  public Mensaje seleccionarPatron(Jugador jugador, Patron patron) {
-    if (patron == null || !puedeJugar(jugador) || !jugador.cumple(patron)) {
-      return Mensaje.PATRON_INVALIDO;
-    }
-    this.patron = patron;
-    enviar(new ComandoPatron(jugadorLocal, patron.name()));
-    return Mensaje.PATRON_VALIDO;
-  }
-
-  @Override
-  public Mensaje seleccionarVictoria(Jugador jugador, Patron patron) {
-    if (patron == null || !puedeJugar(jugador) || !jugador.cumple(patron)) {
-      return Mensaje.VICTORIA_INVALIDA;
-    }
-    this.patron = patron;
-    enviar(new ComandoVictoria(jugadorLocal, patron.name()));
-    return Mensaje.VICTORIA_VALIDA;
-  }
-
-  @Override
-  public void alRecibir(byte[] datos) {
-    Object contenido = serializador.deserializar(datos, Object.class);
-    if (contenido instanceof EventoSincronizacion evento) {
-      actualizar(evento.estado());
-    } else if (contenido instanceof EventoCartaCantada evento) {
-      actualizar(evento.estado());
-    } else if (contenido instanceof EventoVictoria evento) {
-      actualizar(evento.estado());
-    } else if (contenido instanceof EventoFin evento) {
-      actualizar(evento.estado());
-    } else if (contenido instanceof EventoError evento) {
-      ultimoError = evento.mensaje() == null ? "" : evento.mensaje();
-    }
-    notificarOyentes();
-  }
-
-  private void actualizar(EstadoJuego estado) {
-    ultimoError = "";
-    estadoPartida = convertirEstado(estado.estado());
-    if (estado.patron() != null && !estado.patron().isBlank()) {
-      try {
-        patron = Patron.valueOf(estado.patron().trim().toUpperCase(Locale.ROOT));
-      } catch (IllegalArgumentException e) {
-      }
-    }
-    restantes = estado.restantes();
-    ganador = estado.ganador() == null ? "" : estado.ganador();
-    cartasCantadas = convertirCartas(estado.cartasCantadas());
-    jugadores = convertirJugadores(estado.jugadores());
-  }
-
-  private EstadoPartida convertirEstado(String estado) {
-    if (estado == null || estado.isBlank()) {
-      return estadoPartida;
-    }
-    return switch (estado.trim().toUpperCase(Locale.ROOT)) {
-      case "EN_CURSO" ->
-        EstadoPartida.EN_CURSO;
-      case "FINALIZADA" ->
-        EstadoPartida.TERMINADA;
-      case "CREADA", "PAUSADA" ->
-        EstadoPartida.NO_INICIADA;
-      default ->
-        estadoPartida;
-    };
-  }
-
-  private List<Jugador> convertirJugadores(List<JugadorMensaje> mensajes) {
-    List<Jugador> resultado = new ArrayList<>();
-    for (JugadorMensaje mensaje : mensajes) {
-      List<Carta> cartas = new ArrayList<>();
-      Map<Integer, Carta> cartasPorId = new HashMap<>();
-      for (CartaMensaje cartaMensaje : mensaje.cartas()) {
-        Carta carta = Mazo.crearCarta(cartaMensaje.nombre());
-        cartas.add(carta);
-        cartasPorId.put(cartaMensaje.id(), carta);
-        idsCartas.put(cartaMensaje.nombre(), cartaMensaje.id());
-      }
-      Jugador jugador = new Jugador(mensaje.nombre(), "", cartas);
-      for (Integer id : mensaje.marcadas()) {
-        Carta carta = cartasPorId.get(id);
-        if (carta != null) {
-          jugador.marcarCasilla(carta);
-        }
-      }
-      jugador.agregarPuntos(mensaje.aciertos());
-      resultado.add(jugador);
-    }
-    return List.copyOf(resultado);
-  }
-
-  private List<Carta> convertirCartas(List<CartaMensaje> mensajes) {
-    List<Carta> resultado = new ArrayList<>();
-    for (CartaMensaje mensaje : mensajes) {
-      resultado.add(Mazo.crearCarta(mensaje.nombre()));
-      idsCartas.put(mensaje.nombre(), mensaje.id());
-    }
-    return List.copyOf(resultado);
-  }
-
-  private int idDe(Carta carta) {
-    if (carta == null) {
-      return 0;
-    }
-    Integer id = idsCartas.get(carta.obtenerNombre());
-    return id == null ? 0 : id;
-  }
-
-  private boolean fueCantada(Carta carta) {
-    return cartasCantadas.contains(carta);
-  }
-
-  private boolean puedeJugar(Jugador jugador) {
-    return estadoPartida == EstadoPartida.EN_CURSO
-      && jugador != null
-      && jugador.obtenerNombre().equals(jugadorLocal);
   }
 
   private void enviar(Object comando) {
@@ -326,11 +123,5 @@ public class FachadaBroker implements Fachada, IReceptorExterno {
     }
     byte[] datos = serializador.serializar(new EventoBroker(temaComandos, comando));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
-  }
-
-  private void notificarOyentes() {
-    for (Runnable oyente : oyentes) {
-      oyente.run();
-    }
   }
 }

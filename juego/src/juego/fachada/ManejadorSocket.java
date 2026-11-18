@@ -1,0 +1,143 @@
+package juego.fachada;
+
+import comun.CartaMensaje;
+import comun.EstadoJuego;
+import comun.EventoCartaCantada;
+import comun.EventoError;
+import comun.EventoFin;
+import comun.EventoSincronizacion;
+import comun.EventoVictoria;
+import comun.JugadorMensaje;
+import comunicacion.Receptor;
+import comunicacion.api.IReceptorExterno;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import juego.modelo.Carta;
+import juego.modelo.EstadoPartida;
+import juego.modelo.Jugador;
+import juego.modelo.Mazo;
+import juego.modelo.ModeloJuego;
+import juego.modelo.Patron;
+import serializador.ISerializador;
+
+public class ManejadorSocket implements IReceptorExterno {
+
+  private final int puertoLocal;
+  private final ISerializador serializador;
+  private final Receptor receptor;
+  private final ModeloJuego modelo;
+
+  public ManejadorSocket(int puertoLocal, ISerializador serializador, ModeloJuego modelo) {
+    if (puertoLocal < 0 || puertoLocal > 65535) {
+      throw new IllegalArgumentException("El puerto local no es válido: " + puertoLocal);
+    }
+    if (serializador == null) {
+      throw new IllegalArgumentException("El serializador no puede ser nulo");
+    }
+    if (modelo == null) {
+      throw new IllegalArgumentException("El modelo no puede ser nulo");
+    }
+    this.puertoLocal = puertoLocal;
+    this.serializador = serializador;
+    this.modelo = modelo;
+    this.receptor = new Receptor(this);
+  }
+
+  public void iniciar() {
+    receptor.iniciar(puertoLocal);
+    if (!receptor.estaActivo()) {
+      throw new IllegalStateException(
+        "No se pudo iniciar la recepción en el puerto " + puertoLocal);
+    }
+  }
+
+  public void detener() {
+    receptor.detener();
+  }
+
+  @Override
+  public void alRecibir(byte[] datos) {
+    Object contenido = serializador.deserializar(datos, Object.class);
+    if (contenido instanceof EventoError evento) {
+      modelo.registrarError(evento.mensaje());
+    } else if (contenido instanceof EventoSincronizacion evento) {
+      actualizarModelo(evento.estado());
+    } else if (contenido instanceof EventoCartaCantada evento) {
+      actualizarModelo(evento.estado());
+    } else if (contenido instanceof EventoVictoria evento) {
+      actualizarModelo(evento.estado());
+    } else if (contenido instanceof EventoFin evento) {
+      actualizarModelo(evento.estado());
+    }
+  }
+
+  private void actualizarModelo(EstadoJuego estado) {
+    modelo.actualizar(
+      convertirEstado(estado.estado()),
+      convertirPatron(estado.patron()),
+      convertirJugadores(estado.jugadores()),
+      convertirCartas(estado.cartasCantadas()),
+      estado.restantes(),
+      estado.ganador()
+    );
+  }
+
+  private EstadoPartida convertirEstado(String estado) {
+    if (estado == null || estado.isBlank()) {
+      return EstadoPartida.NO_INICIADA;
+    }
+    return switch (estado.trim().toUpperCase(Locale.ROOT)) {
+      case "EN_CURSO" ->
+        EstadoPartida.EN_CURSO;
+      case "FINALIZADA" ->
+        EstadoPartida.TERMINADA;
+      default ->
+        EstadoPartida.NO_INICIADA;
+    };
+  }
+
+  private Patron convertirPatron(String patron) {
+    if (patron == null || patron.isBlank()) {
+      return Patron.CHORRO;
+    }
+    try {
+      return Patron.valueOf(patron.trim().toUpperCase(Locale.ROOT));
+    } catch (IllegalArgumentException e) {
+      return Patron.CHORRO;
+    }
+  }
+
+  private List<Jugador> convertirJugadores(List<JugadorMensaje> mensajes) {
+    List<Jugador> resultado = new ArrayList<>();
+    for (JugadorMensaje mensaje : mensajes) {
+      List<Carta> cartas = new ArrayList<>();
+      Map<Integer, Carta> cartasPorId = new HashMap<>();
+      for (CartaMensaje cartaMensaje : mensaje.cartas()) {
+        Carta carta = Mazo.crearCarta(cartaMensaje.id(), cartaMensaje.nombre());
+        cartas.add(carta);
+        cartasPorId.put(cartaMensaje.id(), carta);
+      }
+      Jugador jugador = new Jugador(mensaje.nombre(), "", cartas);
+      for (Integer id : mensaje.marcadas()) {
+        Carta carta = cartasPorId.get(id);
+        if (carta != null) {
+          jugador.marcarCasilla(carta);
+        }
+      }
+      jugador.agregarPuntos(mensaje.aciertos());
+      resultado.add(jugador);
+    }
+    return List.copyOf(resultado);
+  }
+
+  private List<Carta> convertirCartas(List<CartaMensaje> mensajes) {
+    List<Carta> resultado = new ArrayList<>();
+    for (CartaMensaje mensaje : mensajes) {
+      resultado.add(Mazo.crearCarta(mensaje.id(), mensaje.nombre()));
+    }
+    return List.copyOf(resultado);
+  }
+}
