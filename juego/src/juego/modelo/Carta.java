@@ -32,11 +32,11 @@ public class Carta {
     if (!(objeto instanceof Carta carta)) {
       return false;
     }
-    return nombre.equals(carta.nombre);
+    return id == carta.id;
   }
 
   @Override
   public int hashCode() {
-    return nombre.hashCode();
+    return Integer.hashCode(id);
   }
 }
