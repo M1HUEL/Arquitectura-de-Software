@@ -1,7 +1,7 @@
 package juego.modelo;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import juego.fachada.Fachada;
 import juego.observador.Observador;
 
@@ -9,7 +9,7 @@ public class ModeloJuego implements Modelo {
 
   private final String jugadorLocal;
   private final Fachada fachada;
-  private final List<Observador> observadores = new CopyOnWriteArrayList<>();
+  private final List<Observador> observadores = new ArrayList<>();
 
   private List<Jugador> jugadores = List.of();
   private List<Carta> cartasCantadas = List.of();
@@ -132,10 +132,6 @@ public class ModeloJuego implements Modelo {
     if (observador != null) {
       observadores.add(observador);
     }
-  }
-
-  public void eliminarObservador(Observador observador) {
-    observadores.remove(observador);
   }
 
   public void notificarObservadores() {
