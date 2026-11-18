@@ -95,7 +95,7 @@ public class ManejadorSocket implements IReceptorExterno {
       List<Carta> cartas = new ArrayList<>();
       Map<Integer, Carta> cartasPorId = new HashMap<>();
       for (CartaMensaje cartaMensaje : mensaje.cartas()) {
-        Carta carta = Carta.crear(cartaMensaje.id(), cartaMensaje.nombre());
+        Carta carta = new Carta(cartaMensaje.id(), cartaMensaje.nombre());
         cartas.add(carta);
         cartasPorId.put(cartaMensaje.id(), carta);
       }
@@ -115,7 +115,7 @@ public class ManejadorSocket implements IReceptorExterno {
   private List<Carta> convertirCartas(List<CartaMensaje> mensajes) {
     List<Carta> resultado = new ArrayList<>();
     for (CartaMensaje mensaje : mensajes) {
-      resultado.add(Carta.crear(mensaje.id(), mensaje.nombre()));
+      resultado.add(new Carta(mensaje.id(), mensaje.nombre()));
     }
     return List.copyOf(resultado);
   }
