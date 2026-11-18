@@ -114,7 +114,11 @@ public final class Partida {
     if (!participante.obtenerTabla().contiene(carta)) {
       throw new IllegalArgumentException("El jugador no tiene esa carta en su tabla");
     }
-    return participante.marcar(carta);
+    boolean marcada = participante.marcar(carta);
+    if (marcada) {
+      participante.sumarPunto();
+    }
+    return marcada;
   }
 
   public boolean gritarLoteria(Jugador jugador) {

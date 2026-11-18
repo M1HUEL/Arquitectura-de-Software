@@ -8,6 +8,7 @@ public final class Jugador {
   private final String id;
   private final String nombre;
   private final Tabla tabla;
+  private int puntos;
 
   public Jugador(String nombre, Tabla tabla) {
     this(UUID.randomUUID().toString(), nombre, tabla);
@@ -47,6 +48,21 @@ public final class Jugador {
 
   public int obtenerAciertos() {
     return tabla.obtenerAciertos();
+  }
+
+  public void sumarPunto() {
+    puntos++;
+  }
+
+  public void sumarPuntos(int cantidad) {
+    if (cantidad < 0) {
+      throw new IllegalArgumentException("La cantidad de puntos no puede ser negativa");
+    }
+    puntos += cantidad;
+  }
+
+  public int obtenerPuntos() {
+    return puntos;
   }
 
   @Override

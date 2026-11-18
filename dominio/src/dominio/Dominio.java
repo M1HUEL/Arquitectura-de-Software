@@ -503,7 +503,7 @@ public class Dominio implements IReceptorExterno {
       jugador.obtenerNombre(),
       cartas,
       marcadas,
-      jugador.obtenerAciertos()
+      jugador.obtenerPuntos()
     );
   }
 

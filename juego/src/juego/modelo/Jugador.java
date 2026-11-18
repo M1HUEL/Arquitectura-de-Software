@@ -45,7 +45,7 @@ public class Jugador {
     return carta != null && casillasSeleccionadas.contains(carta);
   }
 
-  public void agregarPuntos(int puntos) {
-    puntaje = Math.max(0, puntaje + puntos);
+  public void establecerPuntaje(int puntos) {
+    puntaje = Math.max(0, puntos);
   }
 }
