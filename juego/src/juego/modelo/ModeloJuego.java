@@ -11,7 +11,7 @@ public class ModeloJuego implements Modelo {
   private final Fachada fachada;
   private final List<Observador> observadores = new CopyOnWriteArrayList<>();
   private volatile Mensaje mensaje;
-  private volatile long versionMensaje;
+  private long versionMensaje;
   private final Runnable oyente = this::notificarObservadores;
   private boolean conectado;
 
