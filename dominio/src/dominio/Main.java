@@ -38,6 +38,7 @@ public final class Main {
     verificarBaraja();
     verificarGriton();
     verificarPartida();
+    verificarReglas();
     verificarEncapsulamiento();
     verificarDeterminismo();
     System.out.println("OK: " + verificaciones + " verificaciones");
@@ -432,6 +433,70 @@ public final class Main {
     } catch (IllegalArgumentException esperada) {
       verificar();
     }
+  }
+
+  private static void verificarReglas() {
+    verificarGritoDentroDeVentana();
+    verificarPrimerGritoGana();
+  }
+
+  private static void verificarGritoDentroDeVentana() {
+    Jugador ana = new Jugador("Ana", tablaDesde(1));
+    Jugador luis = new Jugador("Luis", tablaDesde(17));
+    List<Carta> mazo = new ArrayList<>();
+    for (int id = 18; id >= 1; id--) {
+      mazo.add(carta(id));
+    }
+    Partida partida = new Partida(
+      "grito-ventana",
+      List.of(ana, luis),
+      new Griton(new Baraja(mazo), new Random(1L)),
+      TipoVictoria.TABLA_LLENA
+    );
+    partida.iniciar();
+    for (int id = 1; id <= Tabla.TOTAL_CARTAS; id++) {
+      partida.marcar(ana, partida.cantarSiguiente());
+    }
+    afirmar(ana.obtenerTabla().tieneTablaLlena(), "El tablero de Ana debe estar lleno");
+    afirmar(partida.gritarLoteria(ana), "El grito en la carta que llena el tablero debe valer");
+
+    Partida vencida = new Partida(
+      "grito-vencido",
+      List.of(new Jugador("Ana", tablaDesde(1))),
+      new Griton(new Baraja(mazo), new Random(1L)),
+      TipoVictoria.TABLA_LLENA
+    );
+    vencida.iniciar();
+    for (int id = 1; id <= Tabla.TOTAL_CARTAS; id++) {
+      vencida.marcar(vencida.obtenerJugadores().get(0), vencida.cantarSiguiente());
+    }
+    vencida.cantarSiguiente();
+    afirmar(!vencida.gritarLoteria(vencida.obtenerJugadores().get(0)),
+      "El grito después de cantar la siguiente carta no debe valer");
+    afirmar(vencida.estaEnCurso(), "Un grito vencido no debe finalizar la partida");
+  }
+
+  private static void verificarPrimerGritoGana() {
+    Jugador ana = new Jugador("Ana", tablaDesde(1));
+    Jugador luis = new Jugador("Luis", tablaDesde(1));
+    List<Carta> mazo = new ArrayList<>();
+    for (int id = Tabla.TOTAL_CARTAS; id >= 1; id--) {
+      mazo.add(carta(id));
+    }
+    Partida partida = new Partida(
+      "primer-grito",
+      List.of(ana, luis),
+      new Griton(new Baraja(mazo), new Random(1L)),
+      TipoVictoria.TABLA_LLENA
+    );
+    partida.iniciar();
+    for (int id = 1; id <= Tabla.TOTAL_CARTAS; id++) {
+      Carta cantada = partida.cantarSiguiente();
+      partida.marcar(ana, cantada);
+      partida.marcar(luis, cantada);
+    }
+    afirmar(partida.gritarLoteria(luis), "Luis debe ganar al gritar primero");
+    afirmar(partida.obtenerGanadores().equals(List.of(luis)), "Solo el primero que grita debe ganar");
   }
 
   private static void verificarEncapsulamiento() {

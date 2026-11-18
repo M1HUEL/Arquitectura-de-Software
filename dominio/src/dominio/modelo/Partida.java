@@ -1,8 +1,10 @@
 package dominio.modelo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -17,6 +19,7 @@ public final class Partida {
   private final Griton griton;
   private final TipoVictoria tipoVictoria;
   private final List<Jugador> ganadores;
+  private final Map<String, Integer> cartaDeTableroLleno = new HashMap<>();
   private EstadoPartida estado;
 
   public Partida(String id, List<Jugador> jugadores, Griton griton, TipoVictoria tipoVictoria) {
@@ -117,6 +120,10 @@ public final class Partida {
     boolean marcada = participante.marcar(carta);
     if (marcada) {
       participante.sumarPunto();
+      if (participante.obtenerTabla().tieneTablaLlena()) {
+        cartaDeTableroLleno.putIfAbsent(
+          participante.obtenerId(), griton.obtenerCartasGritadas().size());
+      }
     }
     return marcada;
   }
@@ -127,6 +134,11 @@ public final class Partida {
     Jugador participante = buscarJugador(jugador.obtenerId())
       .orElseThrow(() -> new IllegalStateException("El jugador no participa en la partida"));
     if (!participante.tieneLoteria(TipoVictoria.TABLA_LLENA)) {
+      return false;
+    }
+    Integer cartaDeLlenado = cartaDeTableroLleno.get(participante.obtenerId());
+    if (cartaDeLlenado == null
+      || cartaDeLlenado != griton.obtenerCartasGritadas().size()) {
       return false;
     }
     if (!ganadores.contains(participante)) {
