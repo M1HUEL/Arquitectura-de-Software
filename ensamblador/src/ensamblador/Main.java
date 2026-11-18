@@ -21,7 +21,7 @@ import serializador.Serializador;
 
 public class Main {
 
-  private static final String PATRON_FILTRO = "comun.*;java.lang.*;java.util.*;!*";
+  private static final String PATRON_FILTRO = "comun.*;comun.evento.*;java.lang.*;java.util.*;!*";
   private static final String HOST = "127.0.0.1";
   private static final int PUERTO_BROKER = 7000;
   private static final int PUERTO_DOMINIO = 7001;

@@ -1,4 +1,4 @@
-package comun;
+package comun.evento;
 
 import java.io.Serializable;
 

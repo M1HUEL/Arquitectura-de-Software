@@ -2,11 +2,11 @@ package juego.manejador;
 
 import comun.CartaMensaje;
 import comun.EstadoJuego;
-import comun.EventoCartaCantada;
-import comun.EventoError;
-import comun.EventoFin;
-import comun.EventoSincronizacion;
-import comun.EventoVictoria;
+import comun.evento.EventoCartaCantada;
+import comun.evento.EventoError;
+import comun.evento.EventoPartidaFinalizada;
+import comun.evento.EventoEstadoSincronizado;
+import comun.evento.EventoPartidaGanada;
 import comun.JugadorMensaje;
 import comunicacion.api.IReceptorExterno;
 import java.util.ArrayList;
@@ -47,13 +47,13 @@ public class ManejadorSocket implements IReceptorExterno {
   private void procesar(Object contenido) {
     if (contenido instanceof EventoError evento) {
       modelo.registrarError(evento.mensaje());
-    } else if (contenido instanceof EventoSincronizacion evento) {
+    } else if (contenido instanceof EventoEstadoSincronizado evento) {
       actualizarModelo(evento.estado());
     } else if (contenido instanceof EventoCartaCantada evento) {
       actualizarModelo(evento.estado());
-    } else if (contenido instanceof EventoVictoria evento) {
+    } else if (contenido instanceof EventoPartidaGanada evento) {
       actualizarModelo(evento.estado());
-    } else if (contenido instanceof EventoFin evento) {
+    } else if (contenido instanceof EventoPartidaFinalizada evento) {
       actualizarModelo(evento.estado());
     }
   }

@@ -1,18 +1,18 @@
 package dominio;
 
 import comun.CartaMensaje;
-import comun.ComandoCerrar;
-import comun.ComandoIniciar;
-import comun.ComandoMarcar;
-import comun.ComandoPatron;
-import comun.ComandoVictoria;
+import comun.evento.EventoCerrarPartida;
+import comun.evento.EventoIniciarPartida;
+import comun.evento.EventoMarcarCasilla;
+import comun.evento.EventoSeleccionarPatron;
+import comun.evento.EventoGritarLoteria;
 import comun.EstadoJuego;
 import comun.EventoBroker;
-import comun.EventoCartaCantada;
-import comun.EventoError;
-import comun.EventoFin;
-import comun.EventoSincronizacion;
-import comun.EventoVictoria;
+import comun.evento.EventoCartaCantada;
+import comun.evento.EventoError;
+import comun.evento.EventoPartidaFinalizada;
+import comun.evento.EventoEstadoSincronizado;
+import comun.evento.EventoPartidaGanada;
 import comun.JugadorMensaje;
 import comunicacion.api.IDispatcher;
 import comunicacion.api.IReceptorExterno;
@@ -40,8 +40,8 @@ public class Dominio implements IReceptorExterno {
   private final IDispatcher dispatcher;
   private final String hostBroker;
   private final int puertoBroker;
-  private final String temaComandos;
-  private final String temaEventos;
+  private final String temaEventosCliente;
+  private final String temaEventosDominio;
   private final long intervaloMs;
   private final Random aleatorio;
   private final long esperaMs;
@@ -59,13 +59,13 @@ public class Dominio implements IReceptorExterno {
     IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
-    String temaComandos,
-    String temaEventos,
+    String temaEventosCliente,
+    String temaEventosDominio,
     String jugadorLocal,
     long intervaloMs
   ) {
-    this(serializador, dispatcher, hostBroker, puertoBroker, temaComandos,
-      temaEventos, List.of(jugadorLocal), intervaloMs);
+    this(serializador, dispatcher, hostBroker, puertoBroker, temaEventosCliente,
+      temaEventosDominio, List.of(jugadorLocal), intervaloMs);
   }
 
   public Dominio(
@@ -73,14 +73,14 @@ public class Dominio implements IReceptorExterno {
     IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
-    String temaComandos,
-    String temaEventos,
+    String temaEventosCliente,
+    String temaEventosDominio,
     String jugadorLocal,
     long intervaloMs,
     long semilla
   ) {
-    this(serializador, dispatcher, hostBroker, puertoBroker, temaComandos,
-      temaEventos, List.of(jugadorLocal), intervaloMs, semilla);
+    this(serializador, dispatcher, hostBroker, puertoBroker, temaEventosCliente,
+      temaEventosDominio, List.of(jugadorLocal), intervaloMs, semilla);
   }
 
   public Dominio(
@@ -88,13 +88,13 @@ public class Dominio implements IReceptorExterno {
     IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
-    String temaComandos,
-    String temaEventos,
+    String temaEventosCliente,
+    String temaEventosDominio,
     List<String> jugadoresHumanos,
     long intervaloMs
   ) {
-    this(serializador, dispatcher, hostBroker, puertoBroker, temaComandos,
-      temaEventos, jugadoresHumanos, intervaloMs, new Random().nextLong());
+    this(serializador, dispatcher, hostBroker, puertoBroker, temaEventosCliente,
+      temaEventosDominio, jugadoresHumanos, intervaloMs, new Random().nextLong());
   }
 
   public Dominio(
@@ -102,14 +102,14 @@ public class Dominio implements IReceptorExterno {
     IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
-    String temaComandos,
-    String temaEventos,
+    String temaEventosCliente,
+    String temaEventosDominio,
     List<String> jugadoresHumanos,
     long intervaloMs,
     long semilla
   ) {
-    this(serializador, dispatcher, hostBroker, puertoBroker, temaComandos,
-      temaEventos, jugadoresHumanos, intervaloMs, semilla, 0L);
+    this(serializador, dispatcher, hostBroker, puertoBroker, temaEventosCliente,
+      temaEventosDominio, jugadoresHumanos, intervaloMs, semilla, 0L);
   }
 
   public Dominio(
@@ -117,8 +117,8 @@ public class Dominio implements IReceptorExterno {
     IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
-    String temaComandos,
-    String temaEventos,
+    String temaEventosCliente,
+    String temaEventosDominio,
     List<String> jugadoresHumanos,
     long intervaloMs,
     long semilla,
@@ -136,11 +136,11 @@ public class Dominio implements IReceptorExterno {
     if (puertoBroker < 0 || puertoBroker > 65535) {
       throw new IllegalArgumentException("El puerto del broker no es válido: " + puertoBroker);
     }
-    if (temaComandos == null || temaComandos.isBlank()) {
-      throw new IllegalArgumentException("El tema de comandos no puede estar vacío");
+    if (temaEventosCliente == null || temaEventosCliente.isBlank()) {
+      throw new IllegalArgumentException("El tema de eventos del cliente no puede estar vacío");
     }
-    if (temaEventos == null || temaEventos.isBlank()) {
-      throw new IllegalArgumentException("El tema de eventos no puede estar vacío");
+    if (temaEventosDominio == null || temaEventosDominio.isBlank()) {
+      throw new IllegalArgumentException("El tema de eventos del dominio no puede estar vacío");
     }
     if (jugadoresHumanos == null) {
       throw new IllegalArgumentException("La lista de jugadores no puede ser nula");
@@ -161,8 +161,8 @@ public class Dominio implements IReceptorExterno {
     this.dispatcher = dispatcher;
     this.hostBroker = hostBroker.trim();
     this.puertoBroker = puertoBroker;
-    this.temaComandos = temaComandos.trim();
-    this.temaEventos = temaEventos.trim();
+    this.temaEventosCliente = temaEventosCliente.trim();
+    this.temaEventosDominio = temaEventosDominio.trim();
     this.intervaloMs = intervaloMs > 0 ? intervaloMs : INTERVALO_POR_DEFECTO;
     this.aleatorio = new Random(semilla);
     this.esperaMs = Math.max(0L, esperaMs);
@@ -198,22 +198,22 @@ public class Dominio implements IReceptorExterno {
   }
 
   private void procesar(Object contenido) {
-    if (contenido instanceof ComandoIniciar comando) {
+    if (contenido instanceof EventoIniciarPartida evento) {
       if (esperaMs > 0 && (partida == null || partida.estaFinalizada())) {
-        registrarJugador(comando.jugador());
+        registrarJugador(evento.jugador());
       } else {
-        iniciarPartida(comando.jugador());
+        iniciarPartida(evento.jugador());
       }
-    } else if (contenido instanceof ComandoMarcar comando) {
-      marcar(comando.jugador(), comando.cartaId());
-    } else if (contenido instanceof ComandoPatron comando) {
-      cambiarPatron(comando.jugador(), comando.patron());
-    } else if (contenido instanceof ComandoVictoria comando) {
-      gritarVictoria(comando.jugador());
-    } else if (contenido instanceof ComandoCerrar) {
+    } else if (contenido instanceof EventoMarcarCasilla evento) {
+      marcar(evento.jugador(), evento.cartaId());
+    } else if (contenido instanceof EventoSeleccionarPatron evento) {
+      cambiarPatron(evento.jugador(), evento.patron());
+    } else if (contenido instanceof EventoGritarLoteria evento) {
+      gritarVictoria(evento.jugador());
+    } else if (contenido instanceof EventoCerrarPartida) {
       finalizarPartida();
     } else {
-      publicar(new EventoError("Comando desconocido: " + contenido.getClass().getSimpleName()));
+      publicar(new EventoError("Evento desconocido: " + contenido.getClass().getSimpleName()));
     }
   }
 
@@ -221,17 +221,17 @@ public class Dominio implements IReceptorExterno {
     return activo;
   }
 
-  public String obtenerTemaComandos() {
-    return temaComandos;
+  public String obtenerTemaEventosCliente() {
+    return temaEventosCliente;
   }
 
-  public String obtenerTemaEventos() {
-    return temaEventos;
+  public String obtenerTemaEventosDominio() {
+    return temaEventosDominio;
   }
 
   private void iniciarPartida(String jugador) {
     if (partida != null && !partida.estaFinalizada()) {
-      publicar(new EventoSincronizacion(estadoJuego()));
+      publicar(new EventoEstadoSincronizado(estadoJuego()));
       return;
     }
     if (jugador == null || jugador.isBlank()
@@ -255,7 +255,7 @@ public class Dominio implements IReceptorExterno {
           + " (" + humanos.size() + " en espera)");
       }
     }
-    publicar(new EventoSincronizacion(estadoJuego()));
+    publicar(new EventoEstadoSincronizado(estadoJuego()));
   }
 
   private void iniciarEspera() {
@@ -298,7 +298,7 @@ public class Dominio implements IReceptorExterno {
     partida.iniciar();
     patronActual = PATRON_POR_DEFECTO;
     detenerTemporizador();
-    publicar(new EventoSincronizacion(estadoJuego()));
+    publicar(new EventoEstadoSincronizado(estadoJuego()));
     cantarSiguiente();
     if (partida.estaEnCurso() && partida.puedeCantar()) {
       temporizador = new Timer("dominio-cartas", true);
@@ -372,7 +372,7 @@ public class Dominio implements IReceptorExterno {
         publicar(new EventoError("La casilla ya estaba marcada"));
         return;
       }
-      publicar(new EventoSincronizacion(estadoJuego()));
+      publicar(new EventoEstadoSincronizado(estadoJuego()));
     } catch (RuntimeException e) {
       publicarError(e);
     }
@@ -395,7 +395,7 @@ public class Dominio implements IReceptorExterno {
         return;
       }
       patronActual = tipo.name();
-      publicar(new EventoSincronizacion(estadoJuego()));
+      publicar(new EventoEstadoSincronizado(estadoJuego()));
     } catch (RuntimeException e) {
       publicarError(e);
     }
@@ -417,7 +417,7 @@ public class Dominio implements IReceptorExterno {
         return;
       }
       detenerTemporizador();
-      publicar(new EventoVictoria(estadoJuego()));
+      publicar(new EventoPartidaGanada(estadoJuego()));
     } catch (RuntimeException e) {
       publicarError(e);
     }
@@ -428,7 +428,7 @@ public class Dominio implements IReceptorExterno {
     if (partida != null && partida.estaEnCurso()) {
       partida.finalizar();
     }
-    publicar(new EventoFin(estadoJuego()));
+    publicar(new EventoPartidaFinalizada(estadoJuego()));
   }
 
   private TipoVictoria convertirTipoVictoria(String patron) {
@@ -475,7 +475,7 @@ public class Dominio implements IReceptorExterno {
   }
 
   private void publicar(Object evento) {
-    byte[] datos = serializador.serializar(new EventoBroker(temaEventos, evento));
+    byte[] datos = serializador.serializar(new EventoBroker(temaEventosDominio, evento));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
   }
 
