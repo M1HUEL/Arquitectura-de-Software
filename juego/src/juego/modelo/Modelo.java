@@ -6,8 +6,6 @@ public interface Modelo {
 
   void cerrar();
 
-  void desconectar();
-
   String obtenerJugadorLocal();
 
   List<Jugador> obtenerJugadores();

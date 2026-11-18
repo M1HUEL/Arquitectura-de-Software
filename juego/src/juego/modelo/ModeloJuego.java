@@ -39,11 +39,6 @@ public class ModeloJuego implements Modelo {
     fachada.cerrar();
   }
 
-  @Override
-  public void desconectar() {
-    fachada.desconectar();
-  }
-
   public void actualizar(
     EstadoPartida estado,
     Patron patron,

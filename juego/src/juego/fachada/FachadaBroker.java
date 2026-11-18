@@ -65,10 +65,6 @@ public class FachadaBroker implements Fachada {
   }
 
   @Override
-  public void desconectar() {
-  }
-
-  @Override
   public void seleccionarCasilla(Carta carta) {
     if (carta != null) {
       enviar(new ComandoMarcar(jugadorLocal, carta.obtenerId()));

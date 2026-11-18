@@ -9,8 +9,6 @@ public interface Fachada {
 
   void cerrar();
 
-  void desconectar();
-
   void seleccionarCasilla(Carta carta);
 
   void seleccionarPatron(Patron patron);

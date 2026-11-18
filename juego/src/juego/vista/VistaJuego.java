@@ -2,8 +2,6 @@ package juego.vista;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JFrame;
@@ -37,13 +35,6 @@ public class VistaJuego extends JFrame implements Observador {
 
     contenedorTableros = new JPanel(new GridLayout(0, 1, 0, 8));
     panelLateral = new PanelLateral(modelo, controlador, this::buscarJugadorLocal, this::dispose);
-
-    addWindowListener(new WindowAdapter() {
-      @Override
-      public void windowClosed(WindowEvent evento) {
-        modelo.desconectar();
-      }
-    });
 
     add(new JScrollPane(contenedorTableros), BorderLayout.CENTER);
     add(panelLateral, BorderLayout.EAST);

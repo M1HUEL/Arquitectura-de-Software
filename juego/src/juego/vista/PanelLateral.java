@@ -81,10 +81,7 @@ public class PanelLateral extends JPanel {
     });
 
     JButton botonSalir = new JButton("Salir de la partida");
-    botonSalir.addActionListener(evento -> {
-      modelo.desconectar();
-      alCerrarVentana.run();
-    });
+    botonSalir.addActionListener(evento -> alCerrarVentana.run());
 
     JPanel seccionInformacion = new JPanel(new GridLayout(4, 1));
     seccionInformacion.setBorder(BorderFactory.createTitledBorder("Información"));
