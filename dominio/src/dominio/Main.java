@@ -438,6 +438,8 @@ public final class Main {
   private static void verificarReglas() {
     verificarGritoDentroDeVentana();
     verificarPrimerGritoGana();
+    verificarPuntos();
+    verificarGanadorPorPuntos();
   }
 
   private static void verificarGritoDentroDeVentana() {
@@ -497,6 +499,60 @@ public final class Main {
     }
     afirmar(partida.gritarLoteria(luis), "Luis debe ganar al gritar primero");
     afirmar(partida.obtenerGanadores().equals(List.of(luis)), "Solo el primero que grita debe ganar");
+  }
+
+  private static void verificarPuntos() {
+    Jugador ana = new Jugador("Ana", tablaDesde(1));
+    Partida partida = new Partida(
+      "puntos",
+      List.of(ana),
+      new Griton(new Baraja(List.of(carta(4), carta(3), carta(2), carta(1))), new Random(1L)),
+      TipoVictoria.CHORRO
+    );
+    partida.iniciar();
+    for (int id = 1; id <= 4; id++) {
+      partida.marcar(ana, partida.cantarSiguiente());
+    }
+    afirmar(ana.obtenerPuntos() == 4, "Cada casilla marcada debe sumar un punto");
+    afirmar(ana.puntuarPatron(TipoVictoria.CHORRO), "El chorro completo debe sumar puntos");
+    afirmar(ana.obtenerPuntos() == 9, "Un patrón completo debe sumar cinco puntos");
+    afirmar(!ana.puntuarPatron(TipoVictoria.CHORRO), "El mismo patrón no debe puntuarse dos veces");
+    afirmar(!ana.puntuarPatron(TipoVictoria.CENTRO), "Un patrón incompleto no debe sumar puntos");
+    afirmar(ana.obtenerPuntos() == 9, "Los patrones inválidos no deben alterar el puntaje");
+  }
+
+  private static void verificarGanadorPorPuntos() {
+    Jugador ana = new Jugador("Ana", tablaDesde(1));
+    Jugador luis = new Jugador("Luis", tablaDesde(17));
+    Partida partida = new Partida(
+      "ganador-puntos",
+      List.of(ana, luis),
+      new Griton(new Baraja(List.of(carta(2), carta(1))), new Random(1L)),
+      TipoVictoria.TABLA_LLENA
+    );
+    partida.iniciar();
+    partida.marcar(ana, partida.cantarSiguiente());
+    partida.marcar(ana, partida.cantarSiguiente());
+    partida.finalizar();
+    afirmar(ana.obtenerPuntos() == 2, "Ana debe tener dos puntos");
+    afirmar(luis.obtenerPuntos() == 0, "Luis debe tener cero puntos");
+    afirmar(partida.obtenerGanadores().contains(ana), "Ana debe ganar por puntos");
+
+    Jugador carlos = new Jugador("Carlos", tablaDesde(1));
+    Jugador diana = new Jugador("Diana", tablaDesde(1));
+    Partida empatada = new Partida(
+      "empate-puntos",
+      List.of(carlos, diana),
+      new Griton(new Baraja(List.of(carta(4), carta(3), carta(2), carta(1))), new Random(1L)),
+      TipoVictoria.TABLA_LLENA
+    );
+    empatada.iniciar();
+    Carta primera = empatada.cantarSiguiente();
+    empatada.marcar(carlos, primera);
+    empatada.marcar(diana, primera);
+    empatada.finalizar();
+    afirmar(carlos.obtenerPuntos() == diana.obtenerPuntos(), "Los jugadores deben empatar");
+    afirmar(empatada.obtenerGanadores().isEmpty(), "Un empate no debe tener ganador");
   }
 
   private static void verificarEncapsulamiento() {
