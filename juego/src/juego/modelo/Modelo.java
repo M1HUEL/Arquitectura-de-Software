@@ -22,5 +22,5 @@ public interface Modelo {
 
   String obtenerUltimoError();
 
-  Mensaje consumirMensaje();
+  TipoMensaje consumirMensaje();
 }

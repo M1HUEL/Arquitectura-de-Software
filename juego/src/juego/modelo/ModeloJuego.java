@@ -18,7 +18,7 @@ public class ModeloJuego implements Modelo {
   private volatile String ganador = "";
   private volatile String ultimoError = "";
   private volatile Patron patron = Patron.CHORRO;
-  private volatile Mensaje mensaje;
+  private volatile TipoMensaje mensaje;
 
   public ModeloJuego(String jugadorLocal, Fachada fachada) {
     if (jugadorLocal == null || jugadorLocal.isBlank()) {
@@ -69,57 +69,57 @@ public class ModeloJuego implements Modelo {
   }
 
   public void seleccionarCasilla(Carta carta, Jugador jugador) {
-    Mensaje resultado = validarCasilla(carta, jugador);
-    if (resultado == Mensaje.CASILLA_VALIDA) {
+    TipoMensaje resultado = validarCasilla(carta, jugador);
+    if (resultado == TipoMensaje.CASILLA_VALIDA) {
       fachada.seleccionarCasilla(carta);
     }
     notificarObservadores(resultado);
   }
 
   public void seleccionarPatron(Jugador jugador, Patron patron) {
-    Mensaje resultado = validarPatron(jugador, patron);
-    if (resultado == Mensaje.PATRON_VALIDO) {
+    TipoMensaje resultado = validarPatron(jugador, patron);
+    if (resultado == TipoMensaje.PATRON_VALIDO) {
       fachada.seleccionarPatron(patron);
     }
     notificarObservadores(resultado);
   }
 
   public void seleccionarVictoria(Jugador jugador, Patron patron) {
-    Mensaje resultado = validarVictoria(jugador, patron);
-    if (resultado == Mensaje.VICTORIA_VALIDA) {
+    TipoMensaje resultado = validarVictoria(jugador, patron);
+    if (resultado == TipoMensaje.VICTORIA_VALIDA) {
       fachada.seleccionarVictoria(patron);
     }
     notificarObservadores(resultado);
   }
 
-  private Mensaje validarCasilla(Carta carta, Jugador jugador) {
+  private TipoMensaje validarCasilla(Carta carta, Jugador jugador) {
     if (!puedeJugar(jugador) || carta == null) {
-      return Mensaje.CASILLA_INVALIDA;
+      return TipoMensaje.CASILLA_INVALIDA;
     }
     if (!jugador.obtenerCartas().contains(carta)) {
-      return Mensaje.CASILLA_INVALIDA;
+      return TipoMensaje.CASILLA_INVALIDA;
     }
     if (!cartasCantadas.contains(carta)) {
-      return Mensaje.CASILLA_INVALIDA;
+      return TipoMensaje.CASILLA_INVALIDA;
     }
     if (jugador.estaSeleccionada(carta)) {
-      return Mensaje.CASILLA_INVALIDA;
+      return TipoMensaje.CASILLA_INVALIDA;
     }
-    return Mensaje.CASILLA_VALIDA;
+    return TipoMensaje.CASILLA_VALIDA;
   }
 
-  private Mensaje validarPatron(Jugador jugador, Patron patron) {
+  private TipoMensaje validarPatron(Jugador jugador, Patron patron) {
     if (patron == null || !puedeJugar(jugador) || !jugador.cumple(patron)) {
-      return Mensaje.PATRON_INVALIDO;
+      return TipoMensaje.PATRON_INVALIDO;
     }
-    return Mensaje.PATRON_VALIDO;
+    return TipoMensaje.PATRON_VALIDO;
   }
 
-  private Mensaje validarVictoria(Jugador jugador, Patron patron) {
+  private TipoMensaje validarVictoria(Jugador jugador, Patron patron) {
     if (patron == null || !puedeJugar(jugador) || !jugador.cumple(patron)) {
-      return Mensaje.VICTORIA_INVALIDA;
+      return TipoMensaje.VICTORIA_INVALIDA;
     }
-    return Mensaje.VICTORIA_VALIDA;
+    return TipoMensaje.VICTORIA_VALIDA;
   }
 
   private boolean puedeJugar(Jugador jugador) {
@@ -144,7 +144,7 @@ public class ModeloJuego implements Modelo {
     }
   }
 
-  private void notificarObservadores(Mensaje resultado) {
+  private void notificarObservadores(TipoMensaje resultado) {
     this.mensaje = resultado;
     notificarObservadores();
   }
@@ -189,8 +189,8 @@ public class ModeloJuego implements Modelo {
   }
 
   @Override
-  public Mensaje consumirMensaje() {
-    Mensaje actual = mensaje;
+  public TipoMensaje consumirMensaje() {
+    TipoMensaje actual = mensaje;
     mensaje = null;
     return actual;
   }

@@ -14,7 +14,7 @@ import javax.swing.SwingUtilities;
 import juego.controlador.ControladorJuego;
 import juego.modelo.EstadoPartida;
 import juego.modelo.Jugador;
-import juego.modelo.Mensaje;
+import juego.modelo.TipoMensaje;
 import juego.modelo.Modelo;
 import juego.observador.Observador;
 
@@ -83,7 +83,7 @@ public class VistaJuego extends JFrame implements Observador {
     contenedorTableros.revalidate();
     contenedorTableros.repaint();
 
-    Mensaje mensaje = this.modelo.consumirMensaje();
+    TipoMensaje mensaje = this.modelo.consumirMensaje();
     if (mensaje == null) {
       return;
     }

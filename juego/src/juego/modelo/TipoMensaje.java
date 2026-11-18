@@ -1,6 +1,6 @@
 package juego.modelo;
 
-public enum Mensaje {
+public enum TipoMensaje {
   CASILLA_VALIDA,
   CASILLA_INVALIDA,
   PATRON_VALIDO,
