@@ -6,39 +6,19 @@ import comun.ComandoMarcar;
 import comun.ComandoPatron;
 import comun.ComandoVictoria;
 import comun.EventoBroker;
-import comunicacion.Dispatcher;
-import comunicacion.DispatcherFactory;
+import comunicacion.api.IDispatcher;
 import juego.modelo.Carta;
 import juego.modelo.Patron;
 import serializador.ISerializador;
-import serializador.Serializador;
 
 public class FachadaBroker implements Fachada {
-
-  private static final String PATRON_FILTRO = "comun.*;java.lang.*;java.util.*;!*";
 
   private final String jugadorLocal;
   private final String hostBroker;
   private final int puertoBroker;
   private final String temaComandos;
   private final ISerializador serializador;
-  private final Dispatcher dispatcher;
-
-  public FachadaBroker(
-    String jugadorLocal,
-    String hostBroker,
-    int puertoBroker,
-    String temaComandos
-  ) {
-    this(
-      jugadorLocal,
-      hostBroker,
-      puertoBroker,
-      temaComandos,
-      new Serializador(PATRON_FILTRO),
-      DispatcherFactory.crear()
-    );
-  }
+  private final IDispatcher dispatcher;
 
   public FachadaBroker(
     String jugadorLocal,
@@ -46,7 +26,7 @@ public class FachadaBroker implements Fachada {
     int puertoBroker,
     String temaComandos,
     ISerializador serializador,
-    Dispatcher dispatcher
+    IDispatcher dispatcher
   ) {
     if (jugadorLocal == null || jugadorLocal.isBlank()) {
       throw new IllegalArgumentException("El jugador local no puede estar vacío");
@@ -76,24 +56,16 @@ public class FachadaBroker implements Fachada {
 
   @Override
   public void iniciar() {
-    if (dispatcher.estaActivo()) {
-      return;
-    }
-    dispatcher.iniciar();
     enviar(new ComandoIniciar(jugadorLocal));
   }
 
   @Override
   public void cerrar() {
-    if (dispatcher.estaActivo()) {
-      enviar(new ComandoCerrar(jugadorLocal));
-    }
-    desconectar();
+    enviar(new ComandoCerrar(jugadorLocal));
   }
 
   @Override
   public void desconectar() {
-    dispatcher.detener();
   }
 
   @Override
@@ -118,9 +90,6 @@ public class FachadaBroker implements Fachada {
   }
 
   private void enviar(Object comando) {
-    if (!dispatcher.estaActivo()) {
-      return;
-    }
     byte[] datos = serializador.serializar(new EventoBroker(temaComandos, comando));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
   }

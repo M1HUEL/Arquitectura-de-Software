@@ -1,6 +1,7 @@
 package ensamblador;
 
 import broker.Broker;
+import comunicacion.Dispatcher;
 import comunicacion.DispatcherFactory;
 import comunicacion.Receptor;
 import dominio.Dominio;
@@ -50,7 +51,9 @@ public class Main {
   private static void iniciarBroker(String[] args) {
     int puertoBroker = entero(args, 1, PUERTO_BROKER);
     int puertoDominio = entero(args, 2, PUERTO_DOMINIO);
-    Broker broker = new Broker(new Serializador(PATRON_FILTRO), DispatcherFactory.crear());
+    Dispatcher dispatcher = DispatcherFactory.crear();
+    Broker broker = new Broker(new Serializador(PATRON_FILTRO), dispatcher);
+    Receptor receptor = new Receptor(broker);
     try {
       broker.suscribir(TEMA_COMANDOS, HOST, puertoDominio);
       if (args.length > 3) {
@@ -64,16 +67,16 @@ public class Main {
         broker.suscribir(TEMA_EVENTOS, HOST, PUERTO_CLIENTE);
         broker.suscribir(TEMA_EVENTOS, HOST, PUERTO_CLIENTE + 1);
       }
-      broker.iniciar(puertoBroker);
+      dispatcher.iniciar();
+      iniciarReceptor(receptor, puertoBroker);
     } catch (RuntimeException e) {
       System.err.println("No se pudo iniciar el broker: " + e.getMessage());
-      broker.detener();
+      detener(receptor, dispatcher);
       return;
     }
-    Runtime.getRuntime().addShutdownHook(new Thread(broker::detener));
-    System.out.println("Broker escuchando en " + HOST + ":" + broker.obtenerPuerto());
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> detener(receptor, dispatcher)));
+    System.out.println("Broker escuchando en " + HOST + ":" + receptor.obtenerPuerto());
     System.out.println("Dominio suscrito en " + HOST + ":" + puertoDominio);
-    System.out.println("Clientes suscritos: " + broker.obtenerSuscriptores(TEMA_EVENTOS));
     bloquear();
   }
 
@@ -82,10 +85,11 @@ public class Main {
     int puertoBroker = entero(args, 2, PUERTO_BROKER);
     int segundosEspera = entero(args, 3, SEGUNDOS_ESPERA);
     long intervalo = largo(args, 4, INTERVALO_CARTAS);
+    Serializador serializador = new Serializador(PATRON_FILTRO);
+    Dispatcher dispatcher = DispatcherFactory.crear();
     Dominio dominio = new Dominio(
-      new Serializador(PATRON_FILTRO),
-      DispatcherFactory.crear(),
-      new Receptor(),
+      serializador,
+      dispatcher,
       HOST,
       puertoBroker,
       TEMA_COMANDOS,
@@ -95,15 +99,22 @@ public class Main {
       new Random().nextLong(),
       Math.max(1, segundosEspera) * 1000L
     );
+    Receptor receptor = new Receptor(dominio);
     try {
-      dominio.iniciar(puertoDominio);
+      dispatcher.iniciar();
+      dominio.iniciar();
+      iniciarReceptor(receptor, puertoDominio);
     } catch (RuntimeException e) {
       System.err.println("No se pudo iniciar el dominio: " + e.getMessage());
       dominio.detener();
+      detener(receptor, dispatcher);
       return;
     }
-    Runtime.getRuntime().addShutdownHook(new Thread(dominio::detener));
-    System.out.println("Dominio escuchando en " + HOST + ":" + puertoDominio);
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      dominio.detener();
+      detener(receptor, dispatcher);
+    }));
+    System.out.println("Dominio escuchando en " + HOST + ":" + receptor.obtenerPuerto());
     System.out.println("Broker en " + HOST + ":" + puertoBroker);
     System.out.println("Espera para conectar clientes: " + Math.max(1, segundosEspera) + " s");
     bloquear();
@@ -124,26 +135,29 @@ public class Main {
     String hostBroker = args.length > 4 ? args[4] : HOST;
     Serializador serializador = new Serializador(PATRON_FILTRO);
     SwingUtilities.invokeLater(() -> {
+      Dispatcher dispatcher = DispatcherFactory.crear();
       FachadaBroker fachada = new FachadaBroker(
-        nombre, hostBroker, puertoBroker, TEMA_COMANDOS, serializador, DispatcherFactory.crear());
+        nombre, hostBroker, puertoBroker, TEMA_COMANDOS, serializador, dispatcher);
       ModeloJuego modelo = new ModeloJuego(nombre, fachada);
-      ManejadorSocket manejador = new ManejadorSocket(puertoCliente, serializador, modelo);
+      ManejadorSocket manejador = new ManejadorSocket(serializador, modelo);
+      Receptor receptor = new Receptor(manejador);
       ControladorJuego controlador = new ControladorJuego(modelo);
       VistaJuego vista = new VistaJuego(modelo, controlador);
       vista.addWindowListener(new WindowAdapter() {
         @Override
         public void windowClosed(WindowEvent evento) {
-          manejador.detener();
+          detener(receptor, dispatcher);
           System.exit(0);
         }
       });
       modelo.agregarObservador(vista);
       try {
-        manejador.iniciar();
+        iniciarReceptor(receptor, puertoCliente);
+        dispatcher.iniciar();
         vista.setVisible(true);
         modelo.iniciar();
       } catch (RuntimeException e) {
-        manejador.detener();
+        detener(receptor, dispatcher);
         JOptionPane.showMessageDialog(
           vista,
           "No se pudo conectar el cliente: " + e.getMessage(),
@@ -153,6 +167,18 @@ public class Main {
         vista.dispose();
       }
     });
+  }
+
+  private static void iniciarReceptor(Receptor receptor, int puerto) {
+    receptor.iniciar(puerto);
+    if (!receptor.estaActivo()) {
+      throw new IllegalStateException("No se pudo iniciar la recepción en el puerto " + puerto);
+    }
+  }
+
+  private static void detener(Receptor receptor, Dispatcher dispatcher) {
+    receptor.detener();
+    dispatcher.detener();
   }
 
   private static void bloquear() {

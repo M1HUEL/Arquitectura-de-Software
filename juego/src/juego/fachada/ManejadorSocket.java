@@ -8,7 +8,6 @@ import comun.EventoFin;
 import comun.EventoSincronizacion;
 import comun.EventoVictoria;
 import comun.JugadorMensaje;
-import comunicacion.Receptor;
 import comunicacion.api.IReceptorExterno;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,37 +24,18 @@ import serializador.ISerializador;
 
 public class ManejadorSocket implements IReceptorExterno {
 
-  private final int puertoLocal;
   private final ISerializador serializador;
-  private final Receptor receptor;
   private final ModeloJuego modelo;
 
-  public ManejadorSocket(int puertoLocal, ISerializador serializador, ModeloJuego modelo) {
-    if (puertoLocal < 0 || puertoLocal > 65535) {
-      throw new IllegalArgumentException("El puerto local no es válido: " + puertoLocal);
-    }
+  public ManejadorSocket(ISerializador serializador, ModeloJuego modelo) {
     if (serializador == null) {
       throw new IllegalArgumentException("El serializador no puede ser nulo");
     }
     if (modelo == null) {
       throw new IllegalArgumentException("El modelo no puede ser nulo");
     }
-    this.puertoLocal = puertoLocal;
     this.serializador = serializador;
     this.modelo = modelo;
-    this.receptor = new Receptor(this);
-  }
-
-  public void iniciar() {
-    receptor.iniciar(puertoLocal);
-    if (!receptor.estaActivo()) {
-      throw new IllegalStateException(
-        "No se pudo iniciar la recepción en el puerto " + puertoLocal);
-    }
-  }
-
-  public void detener() {
-    receptor.detener();
   }
 
   @Override
@@ -92,7 +72,7 @@ public class ManejadorSocket implements IReceptorExterno {
     return switch (estado.trim().toUpperCase(Locale.ROOT)) {
       case "EN_CURSO" ->
         EstadoPartida.EN_CURSO;
-      case "FINALIZADA" ->
+      case "FINALIZADA", "TERMINADA" ->
         EstadoPartida.TERMINADA;
       default ->
         EstadoPartida.NO_INICIADA;

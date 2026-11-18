@@ -14,8 +14,7 @@ import comun.EventoFin;
 import comun.EventoSincronizacion;
 import comun.EventoVictoria;
 import comun.JugadorMensaje;
-import comunicacion.Dispatcher;
-import comunicacion.Receptor;
+import comunicacion.api.IDispatcher;
 import comunicacion.api.IReceptorExterno;
 import dominio.modelo.Carta;
 import dominio.modelo.Casilla;
@@ -38,8 +37,7 @@ public class Dominio implements IReceptorExterno {
   private static final int JUGADORES_MINIMOS = 3;
 
   private final ISerializador serializador;
-  private final Dispatcher dispatcher;
-  private final Receptor receptor;
+  private final IDispatcher dispatcher;
   private final String hostBroker;
   private final int puertoBroker;
   private final String temaComandos;
@@ -58,8 +56,7 @@ public class Dominio implements IReceptorExterno {
 
   public Dominio(
     ISerializador serializador,
-    Dispatcher dispatcher,
-    Receptor receptor,
+    IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
     String temaComandos,
@@ -67,14 +64,13 @@ public class Dominio implements IReceptorExterno {
     String jugadorLocal,
     long intervaloMs
   ) {
-    this(serializador, dispatcher, receptor, hostBroker, puertoBroker, temaComandos,
+    this(serializador, dispatcher, hostBroker, puertoBroker, temaComandos,
       temaEventos, List.of(jugadorLocal), intervaloMs);
   }
 
   public Dominio(
     ISerializador serializador,
-    Dispatcher dispatcher,
-    Receptor receptor,
+    IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
     String temaComandos,
@@ -83,14 +79,13 @@ public class Dominio implements IReceptorExterno {
     long intervaloMs,
     long semilla
   ) {
-    this(serializador, dispatcher, receptor, hostBroker, puertoBroker, temaComandos,
+    this(serializador, dispatcher, hostBroker, puertoBroker, temaComandos,
       temaEventos, List.of(jugadorLocal), intervaloMs, semilla);
   }
 
   public Dominio(
     ISerializador serializador,
-    Dispatcher dispatcher,
-    Receptor receptor,
+    IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
     String temaComandos,
@@ -98,14 +93,13 @@ public class Dominio implements IReceptorExterno {
     List<String> jugadoresHumanos,
     long intervaloMs
   ) {
-    this(serializador, dispatcher, receptor, hostBroker, puertoBroker, temaComandos,
+    this(serializador, dispatcher, hostBroker, puertoBroker, temaComandos,
       temaEventos, jugadoresHumanos, intervaloMs, new Random().nextLong());
   }
 
   public Dominio(
     ISerializador serializador,
-    Dispatcher dispatcher,
-    Receptor receptor,
+    IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
     String temaComandos,
@@ -114,14 +108,13 @@ public class Dominio implements IReceptorExterno {
     long intervaloMs,
     long semilla
   ) {
-    this(serializador, dispatcher, receptor, hostBroker, puertoBroker, temaComandos,
+    this(serializador, dispatcher, hostBroker, puertoBroker, temaComandos,
       temaEventos, jugadoresHumanos, intervaloMs, semilla, 0L);
   }
 
   public Dominio(
     ISerializador serializador,
-    Dispatcher dispatcher,
-    Receptor receptor,
+    IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
     String temaComandos,
@@ -136,9 +129,6 @@ public class Dominio implements IReceptorExterno {
     }
     if (dispatcher == null) {
       throw new IllegalArgumentException("El dispatcher no puede ser nulo");
-    }
-    if (receptor == null) {
-      throw new IllegalArgumentException("El receptor no puede ser nulo");
     }
     if (hostBroker == null || hostBroker.isBlank()) {
       throw new IllegalArgumentException("El host del broker no puede estar vacío");
@@ -169,7 +159,6 @@ public class Dominio implements IReceptorExterno {
     }
     this.serializador = serializador;
     this.dispatcher = dispatcher;
-    this.receptor = receptor;
     this.hostBroker = hostBroker.trim();
     this.puertoBroker = puertoBroker;
     this.temaComandos = temaComandos.trim();
@@ -177,27 +166,11 @@ public class Dominio implements IReceptorExterno {
     this.intervaloMs = intervaloMs > 0 ? intervaloMs : INTERVALO_POR_DEFECTO;
     this.aleatorio = new Random(semilla);
     this.esperaMs = Math.max(0L, esperaMs);
-    this.receptor.agregarReceptor(this);
   }
 
-  public void iniciar(int puertoLocal) {
-    if (puertoLocal < 0 || puertoLocal > 65535) {
-      throw new IllegalArgumentException("El puerto local no es válido: " + puertoLocal);
-    }
+  public void iniciar() {
     if (activo) {
       return;
-    }
-    dispatcher.iniciar();
-    try {
-      receptor.iniciar(puertoLocal);
-    } catch (RuntimeException e) {
-      dispatcher.detener();
-      throw e;
-    }
-    if (!receptor.estaActivo()) {
-      dispatcher.detener();
-      throw new IllegalStateException(
-        "No se pudo iniciar el dominio en el puerto " + puertoLocal);
     }
     activo = true;
     if (esperaMs > 0) {
@@ -211,8 +184,6 @@ public class Dominio implements IReceptorExterno {
       detenerTemporizador();
       detenerEspera();
     }
-    receptor.detener();
-    dispatcher.detener();
   }
 
   @Override
@@ -488,9 +459,6 @@ public class Dominio implements IReceptorExterno {
   }
 
   private void publicar(Object evento) {
-    if (!dispatcher.estaActivo()) {
-      return;
-    }
     byte[] datos = serializador.serializar(new EventoBroker(temaEventos, evento));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
   }
