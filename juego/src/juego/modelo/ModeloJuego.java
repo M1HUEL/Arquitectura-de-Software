@@ -65,7 +65,7 @@ public class ModeloJuego implements Modelo {
 
   public void registrarError(String mensaje) {
     this.ultimoError = mensaje == null ? "" : mensaje;
-    notificarObservadores();
+    notificarObservadores(TipoMensaje.ERROR);
   }
 
   public void seleccionarCasilla(Carta carta, Jugador jugador) {

@@ -106,6 +106,9 @@ public class VistaJuego extends JFrame implements Observador {
       case VICTORIA_INVALIDA:
         mostrarMensajeVictoriaInvalida();
         break;
+      case ERROR:
+        mostrarMensajeError();
+        break;
     }
   }
 
@@ -163,5 +166,10 @@ public class VistaJuego extends JFrame implements Observador {
 
   public void mostrarMensajeVictoriaInvalida() {
     JOptionPane.showMessageDialog(this, "Victoria inválida.");
+  }
+
+  public void mostrarMensajeError() {
+    JOptionPane.showMessageDialog(
+      this, modelo.obtenerUltimoError(), "Error", JOptionPane.ERROR_MESSAGE);
   }
 }
