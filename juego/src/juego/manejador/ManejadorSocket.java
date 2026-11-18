@@ -1,4 +1,4 @@
-package juego.fachada;
+package juego.manejador;
 
 import comun.CartaMensaje;
 import comun.EstadoJuego;

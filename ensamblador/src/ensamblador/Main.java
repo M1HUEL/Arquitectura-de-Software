@@ -14,7 +14,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import juego.controlador.ControladorJuego;
 import juego.fachada.FachadaBroker;
-import juego.fachada.ManejadorSocket;
+import juego.manejador.ManejadorSocket;
 import juego.modelo.ModeloJuego;
 import juego.vista.VistaJuego;
 import serializador.Serializador;
