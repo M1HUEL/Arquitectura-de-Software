@@ -104,7 +104,7 @@ public class ManejadorSocket implements IReceptorExterno {
         cartas.add(carta);
         cartasPorId.put(cartaMensaje.id(), carta);
       }
-      Jugador jugador = new Jugador(mensaje.nombre(), "", cartas);
+      Jugador jugador = new Jugador(mensaje.nombre(), cartas);
       for (Integer id : mensaje.marcadas()) {
         Carta carta = cartasPorId.get(id);
         if (carta != null) {
