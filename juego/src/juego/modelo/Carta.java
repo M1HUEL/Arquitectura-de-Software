@@ -18,6 +18,10 @@ public class Carta {
     this.imagen = imagen == null ? "" : imagen;
   }
 
+  public static Carta crear(int id, String nombre) {
+    return new Carta(id, nombre, crearNombreImagen(nombre));
+  }
+
   public int obtenerId() {
     return id;
   }
@@ -44,5 +48,17 @@ public class Carta {
   @Override
   public int hashCode() {
     return nombre.hashCode();
+  }
+
+  private static String crearNombreImagen(String nombre) {
+    return nombre.toLowerCase()
+      .replace("á", "a")
+      .replace("é", "e")
+      .replace("í", "i")
+      .replace("ó", "o")
+      .replace("ú", "u")
+      .replace("ñ", "n")
+      .replace(" ", "_")
+      + ".png";
   }
 }

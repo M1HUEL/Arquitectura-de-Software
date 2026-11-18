@@ -17,7 +17,6 @@ import java.util.Map;
 import juego.modelo.Carta;
 import juego.modelo.EstadoPartida;
 import juego.modelo.Jugador;
-import juego.modelo.Mazo;
 import juego.modelo.ModeloJuego;
 import juego.modelo.Patron;
 import serializador.ISerializador;
@@ -96,7 +95,7 @@ public class ManejadorSocket implements IReceptorExterno {
       List<Carta> cartas = new ArrayList<>();
       Map<Integer, Carta> cartasPorId = new HashMap<>();
       for (CartaMensaje cartaMensaje : mensaje.cartas()) {
-        Carta carta = Mazo.crearCarta(cartaMensaje.id(), cartaMensaje.nombre());
+        Carta carta = Carta.crear(cartaMensaje.id(), cartaMensaje.nombre());
         cartas.add(carta);
         cartasPorId.put(cartaMensaje.id(), carta);
       }
@@ -116,7 +115,7 @@ public class ManejadorSocket implements IReceptorExterno {
   private List<Carta> convertirCartas(List<CartaMensaje> mensajes) {
     List<Carta> resultado = new ArrayList<>();
     for (CartaMensaje mensaje : mensajes) {
-      resultado.add(Mazo.crearCarta(mensaje.id(), mensaje.nombre()));
+      resultado.add(Carta.crear(mensaje.id(), mensaje.nombre()));
     }
     return List.copyOf(resultado);
   }
