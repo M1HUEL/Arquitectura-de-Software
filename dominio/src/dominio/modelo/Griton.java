@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
+import java.util.SequencedSet;
 
 public final class Griton {
 
   private final Baraja baraja;
-  private final Set<Carta> gritadas = new LinkedHashSet<>();
+  private final SequencedSet<Carta> gritadas = new LinkedHashSet<>();
 
   public Griton(Baraja baraja) {
     this.baraja = Objects.requireNonNull(baraja, "baraja");
@@ -57,10 +57,6 @@ public final class Griton {
     if (gritadas.isEmpty()) {
       return Optional.empty();
     }
-    Carta ultima = null;
-    for (Carta carta : gritadas) {
-      ultima = carta;
-    }
-    return Optional.of(ultima);
+    return Optional.of(gritadas.getLast());
   }
 }
