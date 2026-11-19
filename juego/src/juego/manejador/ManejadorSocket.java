@@ -39,7 +39,14 @@ public class ManejadorSocket implements IReceptorExterno {
 
   @Override
   public void alRecibir(byte[] datos) {
-    Object contenido = serializador.deserializar(datos, Object.class);
+    Object contenido;
+    try {
+      contenido = serializador.deserializar(datos, Object.class);
+    } catch (RuntimeException e) {
+      modelo.registrarError(
+        "No se pudo interpretar un mensaje del servidor: " + e.getMessage());
+      return;
+    }
     SwingUtilities.invokeLater(() -> procesar(contenido));
   }
 
