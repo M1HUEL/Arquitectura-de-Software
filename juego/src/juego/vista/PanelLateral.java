@@ -9,6 +9,7 @@ import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -74,8 +75,17 @@ public class PanelLateral extends JPanel {
       }
     });
 
-    JButton botonCerrarPartida = new JButton("Cerrar partida");
+    JButton botonCerrarPartida = new JButton("Terminar partida para todos");
     botonCerrarPartida.addActionListener(evento -> {
+      int confirmacion = JOptionPane.showConfirmDialog(
+        this,
+        "¿Terminar la partida para todos los jugadores?",
+        "Terminar partida",
+        JOptionPane.YES_NO_OPTION,
+        JOptionPane.WARNING_MESSAGE);
+      if (confirmacion != JOptionPane.YES_OPTION) {
+        return;
+      }
       modelo.cerrar();
       alCerrarVentana.run();
     });
