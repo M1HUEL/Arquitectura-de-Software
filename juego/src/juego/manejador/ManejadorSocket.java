@@ -18,7 +18,6 @@ import juego.modelo.Carta;
 import juego.modelo.EstadoPartida;
 import juego.modelo.Jugador;
 import juego.modelo.ModeloJuego;
-import juego.modelo.Patron;
 import javax.swing.SwingUtilities;
 import serializador.ISerializador;
 
@@ -61,7 +60,6 @@ public class ManejadorSocket implements IReceptorExterno {
   private void actualizarModelo(EstadoJuego estado) {
     modelo.actualizar(
       convertirEstado(estado.estado()),
-      convertirPatron(estado.patron()),
       convertirJugadores(estado.jugadores()),
       convertirCartas(estado.cartasCantadas()),
       estado.restantes(),
@@ -81,17 +79,6 @@ public class ManejadorSocket implements IReceptorExterno {
       default ->
         EstadoPartida.NO_INICIADA;
     };
-  }
-
-  private Patron convertirPatron(String patron) {
-    if (patron == null || patron.isBlank()) {
-      return Patron.CHORRO;
-    }
-    try {
-      return Patron.valueOf(patron.trim().toUpperCase(Locale.ROOT));
-    } catch (IllegalArgumentException e) {
-      return Patron.CHORRO;
-    }
   }
 
   private List<Jugador> convertirJugadores(List<JugadorMensaje> mensajes) {

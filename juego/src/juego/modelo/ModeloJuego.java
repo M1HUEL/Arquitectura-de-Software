@@ -41,7 +41,6 @@ public class ModeloJuego implements Modelo {
 
   public void actualizar(
     EstadoPartida estado,
-    Patron patron,
     List<Jugador> jugadores,
     List<Carta> cartasCantadas,
     int restantes,
