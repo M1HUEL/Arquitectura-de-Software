@@ -30,14 +30,10 @@ public class GestorSuscriptores {
 
   public void eliminar(String tema, String host, int puerto) {
     validarTema(tema);
-    CopyOnWriteArrayList<Suscriptor> lista = suscriptores.get(tema);
-    if (lista == null) {
-      return;
-    }
-    lista.remove(new Suscriptor(host, puerto));
-    if (lista.isEmpty()) {
-      suscriptores.remove(tema, lista);
-    }
+    suscriptores.computeIfPresent(tema, (clave, lista) -> {
+      lista.remove(new Suscriptor(host, puerto));
+      return lista.isEmpty() ? null : lista;
+    });
   }
 
   public List<Suscriptor> obtener(String tema) {
