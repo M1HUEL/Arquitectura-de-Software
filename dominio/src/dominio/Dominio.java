@@ -409,6 +409,7 @@ public class Dominio implements IReceptorExterno {
     try {
       if (!partida.gritarLoteria(jugador.obtenerId())) {
         publicar(new EventoError("El tablero todavía no está lleno"));
+        publicar(new EventoEstadoSincronizado(estadoJuego()));
         return;
       }
       detenerTemporizador();
