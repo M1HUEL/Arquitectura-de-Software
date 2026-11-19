@@ -129,10 +129,6 @@ public class PanelLateral extends JPanel {
       textoEstado += ganador == null || ganador.isBlank()
         ? " - Empate" : " - Ganador: " + ganador;
     }
-    String ultimoError = modelo.obtenerUltimoError();
-    if (ultimoError != null && !ultimoError.isBlank()) {
-      textoEstado += " - " + ultimoError;
-    }
     etiquetaEstado.setText(textoEstado);
 
     if (local == null) {
