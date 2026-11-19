@@ -56,6 +56,7 @@ public class ModeloJuego implements Modelo {
     this.restantes = Math.max(0, restantes);
     this.ganador = ganador == null ? "" : ganador;
     this.ultimoError = "";
+    this.mensaje = null;
     notificarObservadores();
   }
 
