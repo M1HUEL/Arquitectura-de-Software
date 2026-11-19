@@ -1,8 +1,6 @@
 @startuml
 title Analisis - Iniciar partida (BCE)
 
-actor "Jugador" as ActorJugador
-
 package Boundary {
   class PantallaSala <<boundary>> {
     +mostrarJugadores(jugadores): void
@@ -76,6 +74,8 @@ package Entity {
     EN_CURSO
   }
 }
+
+actor "Jugador" as ActorJugador
 
 ActorJugador --> PantallaSala
 PantallaSala --> ControladorIniciarPartida
