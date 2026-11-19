@@ -26,8 +26,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import serializador.ISerializador;
 
 public class Dominio implements IReceptorExterno {
@@ -50,8 +51,8 @@ public class Dominio implements IReceptorExterno {
   private final Object candado = new Object();
 
   private Partida partida;
-  private Timer temporizador;
-  private Timer temporizadorEspera;
+  private ScheduledExecutorService temporizador;
+  private ScheduledExecutorService temporizadorEspera;
   private volatile boolean activo;
 
   public Dominio(
@@ -272,30 +273,27 @@ public class Dominio implements IReceptorExterno {
 
   private void iniciarEspera() {
     detenerEspera();
-    temporizadorEspera = new Timer("dominio-espera", true);
-    temporizadorEspera.schedule(new TimerTask() {
-      @Override
-      public void run() {
-        synchronized (candado) {
-          if (!activo) {
+    temporizadorEspera = crearPlanificador("dominio-espera");
+    temporizadorEspera.schedule(() -> {
+      synchronized (candado) {
+        if (!activo) {
+          return;
+        }
+        try {
+          if (humanos.isEmpty()) {
+            System.out.println("No hay jugadores conectados; se reinicia la espera");
+            iniciarEspera();
             return;
           }
-          try {
-            if (humanos.isEmpty()) {
-              System.out.println("No hay jugadores conectados; se reinicia la espera");
-              iniciarEspera();
-              return;
-            }
-            System.out.println("Tiempo de espera terminado. Iniciando partida con: "
-              + humanos);
-            crearPartida(new ArrayList<>(humanos));
-          } catch (RuntimeException e) {
-            publicarErrorSeguro(e);
-            iniciarEspera();
-          }
+          System.out.println("Tiempo de espera terminado. Iniciando partida con: "
+            + humanos);
+          crearPartida(new ArrayList<>(humanos));
+        } catch (RuntimeException e) {
+          publicarErrorSeguro(e);
+          iniciarEspera();
         }
       }
-    }, esperaMs);
+    }, esperaMs, TimeUnit.MILLISECONDS);
     System.out.println("Esperando " + (esperaMs / 1000)
       + " s para que se conecten los clientes...");
   }
@@ -308,28 +306,33 @@ public class Dominio implements IReceptorExterno {
     publicar(new EventoEstadoSincronizado(estadoJuego()));
     cantarSiguiente();
     if (partida.estaEnCurso() && partida.puedeCantar()) {
-      temporizador = new Timer("dominio-cartas", true);
-      temporizador.scheduleAtFixedRate(new TimerTask() {
-        @Override
-        public void run() {
-          synchronized (candado) {
-            if (!activo) {
-              return;
-            }
-            try {
-              cantarSiguiente();
-            } catch (RuntimeException e) {
-              publicarErrorSeguro(e);
-            }
+      temporizador = crearPlanificador("dominio-cartas");
+      temporizador.scheduleWithFixedDelay(() -> {
+        synchronized (candado) {
+          if (!activo) {
+            return;
+          }
+          try {
+            cantarSiguiente();
+          } catch (RuntimeException e) {
+            publicarErrorSeguro(e);
           }
         }
-      }, intervaloMs, intervaloMs);
+      }, intervaloMs, intervaloMs, TimeUnit.MILLISECONDS);
     }
+  }
+
+  private ScheduledExecutorService crearPlanificador(String nombre) {
+    return Executors.newSingleThreadScheduledExecutor(tarea -> {
+      Thread hilo = new Thread(tarea, nombre);
+      hilo.setDaemon(true);
+      return hilo;
+    });
   }
 
   private void detenerEspera() {
     if (temporizadorEspera != null) {
-      temporizadorEspera.cancel();
+      temporizadorEspera.shutdownNow();
       temporizadorEspera = null;
     }
   }
@@ -536,7 +539,7 @@ public class Dominio implements IReceptorExterno {
 
   private void detenerTemporizador() {
     if (temporizador != null) {
-      temporizador.cancel();
+      temporizador.shutdownNow();
       temporizador = null;
     }
   }
