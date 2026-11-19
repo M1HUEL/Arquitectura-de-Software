@@ -389,12 +389,7 @@ public class Dominio implements IReceptorExterno {
       return;
     }
     try {
-      TipoVictoria tipo = convertirTipoVictoria(patron);
-      if (!jugador.puntuarPatron(tipo)) {
-        publicar(new EventoError("El patrón no está completo o ya fue puntuado"));
-        return;
-      }
-      patronActual = tipo.name();
+      patronActual = convertirTipoVictoria(patron).name();
       publicar(new EventoEstadoSincronizado(estadoJuego()));
     } catch (RuntimeException e) {
       publicarError(e);
@@ -496,8 +491,9 @@ public class Dominio implements IReceptorExterno {
     for (Carta carta : partida.obtenerCartasCantadas()) {
       cantadas.add(convertirCarta(carta));
     }
-    String ganador = partida.obtenerGanadores().isEmpty()
-      ? "" : partida.obtenerGanadores().get(0).obtenerNombre();
+    String ganador = partida.obtenerGanador()
+      .map(Jugador::obtenerNombre)
+      .orElse("");
     return new EstadoJuego(
       partida.obtenerId(),
       partida.obtenerEstado().name(),

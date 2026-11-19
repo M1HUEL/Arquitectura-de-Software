@@ -1,6 +1,8 @@
 package dominio.modelo;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -16,7 +18,7 @@ public final class Partida {
   private final List<Jugador> jugadores;
   private final Griton griton;
   private final TipoVictoria tipoVictoria;
-  private final List<Jugador> ganadores;
+  private Jugador ganador;
   private EstadoPartida estado;
 
   Partida(String id, List<Jugador> jugadores, Griton griton, TipoVictoria tipoVictoria) {
@@ -38,7 +40,6 @@ public final class Partida {
     this.jugadores = new ArrayList<>(jugadores);
     this.griton = Objects.requireNonNull(griton, "griton");
     this.tipoVictoria = Objects.requireNonNull(tipoVictoria, "tipoVictoria");
-    this.ganadores = new ArrayList<>();
     this.estado = EstadoPartida.CREADA;
   }
 
@@ -80,25 +81,7 @@ public final class Partida {
   }
 
   public void finalizar() {
-    exigirAlgunEstado(EstadoPartida.EN_CURSO, EstadoPartida.PAUSADA);
-    if (ganadores.isEmpty()) {
-      int mejorPuntaje = -1;
-      Jugador mejorJugador = null;
-      boolean empatado = false;
-      for (Jugador jugador : jugadores) {
-        int puntos = jugador.obtenerPuntos();
-        if (puntos > mejorPuntaje) {
-          mejorPuntaje = puntos;
-          mejorJugador = jugador;
-          empatado = false;
-        } else if (puntos == mejorPuntaje) {
-          empatado = true;
-        }
-      }
-      if (mejorJugador != null && !empatado) {
-        ganadores.add(mejorJugador);
-      }
-    }
+    exigirEstado(EstadoPartida.EN_CURSO, EstadoPartida.PAUSADA);
     estado = EstadoPartida.FINALIZADA;
   }
 
@@ -127,11 +110,7 @@ public final class Partida {
     if (!participante.obtenerTablero().contiene(carta)) {
       throw new IllegalArgumentException("El jugador no tiene esa carta en su tablero");
     }
-    boolean marcada = participante.marcar(carta);
-    if (marcada) {
-      participante.sumarPunto();
-    }
-    return marcada;
+    return participante.marcar(carta);
   }
 
   public boolean gritarLoteria(String jugadorId) {
@@ -140,11 +119,11 @@ public final class Partida {
     Jugador participante = buscarJugador(jugadorId)
       .orElseThrow(() -> new IllegalStateException("El jugador no participa en la partida"));
     if (!participante.tieneLoteria(tipoVictoria)) {
+      participante.penalizarFalsa();
       return false;
     }
-    if (!ganadores.contains(participante)) {
-      ganadores.add(participante);
-    }
+    participante.premiarLoteria();
+    ganador = participante;
     estado = EstadoPartida.FINALIZADA;
     return true;
   }
@@ -186,8 +165,14 @@ public final class Partida {
     return List.copyOf(jugadores);
   }
 
-  public List<Jugador> obtenerGanadores() {
-    return List.copyOf(ganadores);
+  public Optional<Jugador> obtenerGanador() {
+    return Optional.ofNullable(ganador);
+  }
+
+  public List<Jugador> obtenerClasificacion() {
+    return jugadores.stream()
+      .sorted(Comparator.comparingInt(Jugador::obtenerPuntos).reversed())
+      .toList();
   }
 
   public List<Carta> obtenerCartasCantadas() {
@@ -206,11 +191,7 @@ public final class Partida {
     exigirEstado(EstadoPartida.EN_CURSO);
   }
 
-  private void exigirEstado(EstadoPartida esperado) {
-    exigirAlgunEstado(esperado);
-  }
-
-  private void exigirAlgunEstado(EstadoPartida... permitidos) {
+  private void exigirEstado(EstadoPartida... permitidos) {
     Objects.requireNonNull(permitidos, "permitidos");
     if (estado == EstadoPartida.FINALIZADA) {
       throw new IllegalStateException("La partida ya terminó");
@@ -222,6 +203,6 @@ public final class Partida {
       }
     }
     throw new IllegalStateException(
-      "La partida no está en un estado válido para esta operación (estado actual: " + estado + ")");
+      "Se esperaba el estado " + Arrays.toString(permitidos) + " pero el estado actual es " + estado);
   }
 }

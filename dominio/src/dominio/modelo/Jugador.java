@@ -7,13 +7,16 @@ import java.util.UUID;
 
 public final class Jugador {
 
+  static final int PUNTOS_POR_CARTA = 1;
+  static final int PUNTOS_POR_PATRON = 5;
+  static final int PUNTOS_POR_LOTERIA = 10;
+  static final int PENALIZACION_FALSA = 3;
+
   private final String id;
   private final String nombre;
   private final Tablero tablero;
   private final Set<TipoVictoria> patronesPuntuados = EnumSet.noneOf(TipoVictoria.class);
   private int puntos;
-
-  public static final int PUNTOS_POR_PATRON = 5;
 
   public Jugador(String nombre, Tablero tablero) {
     this(UUID.randomUUID().toString(), nombre, tablero);
@@ -44,35 +47,32 @@ public final class Jugador {
   }
 
   boolean marcar(Carta carta) {
-    return tablero.marcar(carta);
+    if (!tablero.marcar(carta)) {
+      return false;
+    }
+    puntos += PUNTOS_POR_CARTA;
+    for (TipoVictoria patron : TipoVictoria.values()) {
+      if (tieneLoteria(patron) && patronesPuntuados.add(patron)) {
+        puntos += PUNTOS_POR_PATRON;
+      }
+    }
+    return true;
   }
 
   public boolean tieneLoteria(TipoVictoria tipoVictoria) {
     return tablero.cumple(tipoVictoria);
   }
 
-  void sumarPunto() {
-    puntos++;
+  void premiarLoteria() {
+    puntos += PUNTOS_POR_LOTERIA;
   }
 
-  void sumarPuntos(int cantidad) {
-    if (cantidad < 0) {
-      throw new IllegalArgumentException("La cantidad de puntos no puede ser negativa");
-    }
-    puntos += cantidad;
+  void penalizarFalsa() {
+    puntos = Math.max(0, puntos - PENALIZACION_FALSA);
   }
 
   public int obtenerPuntos() {
     return puntos;
-  }
-
-  public boolean puntuarPatron(TipoVictoria tipoVictoria) {
-    Objects.requireNonNull(tipoVictoria, "tipoVictoria");
-    if (!tieneLoteria(tipoVictoria) || !patronesPuntuados.add(tipoVictoria)) {
-      return false;
-    }
-    sumarPuntos(PUNTOS_POR_PATRON);
-    return true;
   }
 
   @Override
