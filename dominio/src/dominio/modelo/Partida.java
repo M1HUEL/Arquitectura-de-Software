@@ -133,7 +133,7 @@ public final class Partida {
     }
     participante.premiarLoteria();
     ganador = participante;
-    estado = EstadoPartida.FINALIZADA;
+    finalizar();
     return true;
   }
 
