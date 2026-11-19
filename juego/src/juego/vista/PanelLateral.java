@@ -123,7 +123,7 @@ public class PanelLateral extends JPanel {
 
     etiquetaCartasRestantes.setText(
       "Cartas restantes: " + modelo.obtenerNumeroCartasRestantes());
-    String textoEstado = "Estado: " + modelo.obtenerEstadoPartida();
+    String textoEstado = "Estado: " + formatearEstado(modelo.obtenerEstadoPartida());
     if (modelo.obtenerEstadoPartida() == EstadoPartida.TERMINADA) {
       String ganador = modelo.obtenerGanador();
       textoEstado += ganador == null || ganador.isBlank()
@@ -156,5 +156,10 @@ public class PanelLateral extends JPanel {
 
   public void seleccionarVictoria(Jugador jugador, Patron patron) {
     controlador.seleccionarVictoria(jugador, patron);
+  }
+
+  private String formatearEstado(EstadoPartida estado) {
+    String texto = estado.name().replace('_', ' ').toLowerCase(java.util.Locale.ROOT);
+    return texto.substring(0, 1).toUpperCase(java.util.Locale.ROOT) + texto.substring(1);
   }
 }
