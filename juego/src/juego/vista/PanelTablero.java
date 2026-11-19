@@ -2,6 +2,8 @@ package juego.vista;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JPanel;
@@ -15,6 +17,7 @@ public class PanelTablero extends JPanel {
 
   private final String nombre;
   private final ControladorJuego controlador;
+  private final Map<Integer, JButton> botonesPorCarta = new LinkedHashMap<>();
   private Jugador jugador;
   private JPanel tablero;
 
@@ -39,27 +42,35 @@ public class PanelTablero extends JPanel {
     setBorder(BorderFactory.createTitledBorder(
       esLocal ? jugador.obtenerNombre() + " (tu tablero)" : jugador.obtenerNombre()));
 
-    JPanel nuevoTablero = new JPanel(new GridLayout(COLUMNAS, COLUMNAS));
+    if (tablero == null) {
+      tablero = new JPanel(new GridLayout(COLUMNAS, COLUMNAS));
+      add(tablero, BorderLayout.CENTER);
+    }
     for (Carta carta : jugador.obtenerCartas()) {
-      boolean marcada = jugador.estaSeleccionada(carta);
-      JButton casilla = new JButton(
-        marcada ? "[" + carta.obtenerNombre() + "]" : carta.obtenerNombre());
-      casilla.setEnabled(puedeJugar);
-      if (puedeJugar) {
-        casilla.addActionListener(evento -> seleccionarCasilla(carta));
-      } else if (!esLocal) {
-        casilla.setToolTipText("Tablero de otro jugador: solo lectura");
+      int id = carta.obtenerId();
+      JButton casilla = botonesPorCarta.get(id);
+      if (casilla == null) {
+        casilla = new JButton();
+        casilla.addActionListener(evento -> seleccionarCarta(id));
+        botonesPorCarta.put(id, casilla);
+        tablero.add(casilla);
       }
-      nuevoTablero.add(casilla);
+      boolean marcada = jugador.estaSeleccionada(carta);
+      casilla.setText(marcada ? "[" + carta.obtenerNombre() + "]" : carta.obtenerNombre());
+      casilla.setEnabled(puedeJugar);
+      casilla.setToolTipText(esLocal ? null : "Tablero de otro jugador: solo lectura");
     }
-
-    if (tablero != null) {
-      remove(tablero);
-    }
-    tablero = nuevoTablero;
-    add(tablero, BorderLayout.CENTER);
     revalidate();
     repaint();
+  }
+
+  private void seleccionarCarta(int id) {
+    for (Carta carta : jugador.obtenerCartas()) {
+      if (carta.obtenerId() == id) {
+        seleccionarCasilla(carta);
+        return;
+      }
+    }
   }
 
   public void seleccionarCasilla(Carta carta) {
