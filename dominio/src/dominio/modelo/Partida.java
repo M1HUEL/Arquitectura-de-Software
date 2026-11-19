@@ -19,7 +19,7 @@ public final class Partida {
   private final Griton griton;
   private final TipoVictoria tipoVictoria;
   private final List<Jugador> ganadores;
-  private final Map<String, Integer> cartaDeTableroLleno = new HashMap<>();
+  private final Map<String, Integer> turnoDeTableroLleno = new HashMap<>();
   private EstadoPartida estado;
 
   public Partida(String id, List<Jugador> jugadores, Griton griton, TipoVictoria tipoVictoria) {
@@ -139,8 +139,7 @@ public final class Partida {
     if (marcada) {
       participante.sumarPunto();
       if (participante.obtenerTablero().tieneTableroLleno()) {
-        cartaDeTableroLleno.putIfAbsent(
-          participante.obtenerId(), griton.obtenerCartasGritadas().size());
+        turnoDeTableroLleno.putIfAbsent(participante.obtenerId(), griton.obtenerTurno());
       }
     }
     return marcada;
@@ -154,9 +153,8 @@ public final class Partida {
     if (!participante.tieneLoteria(TipoVictoria.TABLA_LLENA)) {
       return false;
     }
-    Integer cartaDeLlenado = cartaDeTableroLleno.get(participante.obtenerId());
-    if (cartaDeLlenado == null
-      || cartaDeLlenado != griton.obtenerCartasGritadas().size()) {
+    Integer turnoDeLlenado = turnoDeTableroLleno.get(participante.obtenerId());
+    if (turnoDeLlenado == null || turnoDeLlenado != griton.obtenerTurno()) {
       return false;
     }
     if (!ganadores.contains(participante)) {

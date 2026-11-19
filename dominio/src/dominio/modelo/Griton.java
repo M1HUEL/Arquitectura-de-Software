@@ -1,14 +1,19 @@
 package dominio.modelo;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 
 public final class Griton {
 
   private final Baraja baraja;
   private final Random aleatorio;
+  private final List<Carta> gritadas = new ArrayList<>();
+  private final Set<Carta> registradas = new HashSet<>();
 
   public Griton(Baraja baraja, Random aleatorio) {
     this.baraja = Objects.requireNonNull(baraja, "baraja");
@@ -27,19 +32,22 @@ public final class Griton {
   }
 
   public Carta gritarSiguiente() {
-    return baraja.sacarSiguiente();
+    Carta carta = baraja.sacarSiguiente();
+    gritadas.add(carta);
+    registradas.add(carta);
+    return carta;
   }
 
   public boolean fueGritada(Carta carta) {
-    return baraja.fueCantada(carta);
+    return registradas.contains(carta);
   }
 
   public boolean puedeGritar() {
     return !baraja.estaVacia();
   }
 
-  public boolean estaVacio() {
-    return baraja.estaVacia();
+  public int obtenerTurno() {
+    return gritadas.size();
   }
 
   public int obtenerRestantes() {
@@ -47,7 +55,7 @@ public final class Griton {
   }
 
   public List<Carta> obtenerCartasGritadas() {
-    return baraja.obtenerCantadas();
+    return List.copyOf(gritadas);
   }
 
   public List<Carta> obtenerCartasRestantes() {
@@ -55,10 +63,9 @@ public final class Griton {
   }
 
   public Optional<Carta> obtenerUltimaCarta() {
-    return baraja.obtenerUltimaCantada();
-  }
-
-  public Baraja obtenerBaraja() {
-    return baraja;
+    if (gritadas.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(gritadas.get(gritadas.size() - 1));
   }
 }

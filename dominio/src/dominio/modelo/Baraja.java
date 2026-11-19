@@ -6,15 +6,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 
 public final class Baraja {
 
   private final List<Carta> cartas;
-  private final List<Carta> cartasCantadas;
-  private final Set<Carta> cantadasRegistradas;
 
   public Baraja(List<Carta> cartas) {
     Objects.requireNonNull(cartas, "cartas");
@@ -26,8 +23,6 @@ public final class Baraja {
       throw new IllegalArgumentException("La baraja no puede contener cartas repetidas");
     }
     this.cartas = new ArrayList<>(cartas);
-    this.cartasCantadas = new ArrayList<>();
-    this.cantadasRegistradas = new HashSet<>();
   }
 
   public void revolver(Random aleatorio) {
@@ -39,10 +34,7 @@ public final class Baraja {
     if (estaVacia()) {
       throw new NoSuchElementException("No quedan cartas en la baraja");
     }
-    Carta carta = cartas.remove(cartas.size() - 1);
-    cartasCantadas.add(carta);
-    cantadasRegistradas.add(carta);
-    return carta;
+    return cartas.remove(cartas.size() - 1);
   }
 
   public boolean estaVacia() {
@@ -55,24 +47,5 @@ public final class Baraja {
 
   public List<Carta> obtenerCartasRestantes() {
     return List.copyOf(cartas);
-  }
-
-  public List<Carta> obtenerCantadas() {
-    return List.copyOf(cartasCantadas);
-  }
-
-  public boolean fueCantada(Carta carta) {
-    return cantadasRegistradas.contains(carta);
-  }
-
-  public Optional<Carta> obtenerUltimaCantada() {
-    if (cartasCantadas.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(cartasCantadas.get(cartasCantadas.size() - 1));
-  }
-
-  public boolean contiene(Carta carta) {
-    return cartas.contains(carta);
   }
 }
