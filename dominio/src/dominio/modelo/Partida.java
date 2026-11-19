@@ -68,27 +68,17 @@ public final class Partida {
   }
 
   public void iniciar() {
-    if (estado == EstadoPartida.FINALIZADA) {
-      throw new IllegalStateException("La partida ya terminó");
-    }
-    if (estado != EstadoPartida.CREADA) {
-      throw new IllegalStateException("La partida no se puede iniciar en el estado " + estado);
-    }
+    exigirEstado(EstadoPartida.CREADA);
     estado = EstadoPartida.EN_CURSO;
   }
 
   public void pausar() {
-    exigirEnCurso();
+    exigirEstado(EstadoPartida.EN_CURSO);
     estado = EstadoPartida.PAUSADA;
   }
 
   public void reanudar() {
-    if (estado == EstadoPartida.FINALIZADA) {
-      throw new IllegalStateException("La partida ya terminó");
-    }
-    if (estado != EstadoPartida.PAUSADA) {
-      throw new IllegalStateException("La partida no se puede reanudar en el estado " + estado);
-    }
+    exigirEstado(EstadoPartida.PAUSADA);
     estado = EstadoPartida.EN_CURSO;
   }
 
@@ -214,11 +204,17 @@ public final class Partida {
   }
 
   private void exigirEnCurso() {
+    exigirEstado(EstadoPartida.EN_CURSO);
+  }
+
+  private void exigirEstado(EstadoPartida esperado) {
+    Objects.requireNonNull(esperado, "esperado");
     if (estado == EstadoPartida.FINALIZADA) {
       throw new IllegalStateException("La partida ya terminó");
     }
-    if (estado != EstadoPartida.EN_CURSO) {
-      throw new IllegalStateException("La partida no está en curso");
+    if (estado != esperado) {
+      throw new IllegalStateException(
+        "La partida no está en el estado " + esperado + " (estado actual: " + estado + ")");
     }
   }
 }
