@@ -116,6 +116,9 @@ public final class Partida {
   public boolean declararPatron(String jugadorId, TipoVictoria patron) {
     Objects.requireNonNull(jugadorId, "jugadorId");
     Objects.requireNonNull(patron, "patron");
+    if (patron == tipoVictoria) {
+      throw new IllegalArgumentException("El patrón de victoria no se declara por puntos");
+    }
     exigirEnCurso();
     Jugador participante = buscarJugador(jugadorId)
       .orElseThrow(() -> new IllegalArgumentException("El jugador no participa en la partida"));
