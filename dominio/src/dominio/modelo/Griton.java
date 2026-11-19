@@ -1,7 +1,6 @@
 package dominio.modelo;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -12,8 +11,7 @@ public final class Griton {
 
   private final Baraja baraja;
   private final Random aleatorio;
-  private final List<Carta> gritadas = new ArrayList<>();
-  private final Set<Carta> registradas = new HashSet<>();
+  private final Set<Carta> gritadas = new LinkedHashSet<>();
 
   public Griton(Baraja baraja, Random aleatorio) {
     this.baraja = Objects.requireNonNull(baraja, "baraja");
@@ -34,12 +32,11 @@ public final class Griton {
   public Carta gritarSiguiente() {
     Carta carta = baraja.sacarSiguiente();
     gritadas.add(carta);
-    registradas.add(carta);
     return carta;
   }
 
   public boolean fueGritada(Carta carta) {
-    return registradas.contains(carta);
+    return gritadas.contains(carta);
   }
 
   public boolean puedeGritar() {
@@ -66,6 +63,10 @@ public final class Griton {
     if (gritadas.isEmpty()) {
       return Optional.empty();
     }
-    return Optional.of(gritadas.get(gritadas.size() - 1));
+    Carta ultima = null;
+    for (Carta carta : gritadas) {
+      ultima = carta;
+    }
+    return Optional.of(ultima);
   }
 }
