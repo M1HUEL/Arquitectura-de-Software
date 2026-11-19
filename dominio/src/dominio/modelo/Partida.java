@@ -103,7 +103,7 @@ public final class Partida {
     Objects.requireNonNull(carta, "carta");
     exigirEnCurso();
     Jugador participante = buscarJugador(jugadorId)
-      .orElseThrow(() -> new IllegalStateException("El jugador no participa en la partida"));
+      .orElseThrow(() -> new IllegalArgumentException("El jugador no participa en la partida"));
     if (!griton.fueGritada(carta)) {
       throw new IllegalArgumentException("La carta todavía no se ha cantado");
     }
@@ -118,7 +118,7 @@ public final class Partida {
     Objects.requireNonNull(patron, "patron");
     exigirEnCurso();
     Jugador participante = buscarJugador(jugadorId)
-      .orElseThrow(() -> new IllegalStateException("El jugador no participa en la partida"));
+      .orElseThrow(() -> new IllegalArgumentException("El jugador no participa en la partida"));
     return participante.declararPatron(patron);
   }
 
@@ -126,7 +126,7 @@ public final class Partida {
     Objects.requireNonNull(jugadorId, "jugadorId");
     exigirEnCurso();
     Jugador participante = buscarJugador(jugadorId)
-      .orElseThrow(() -> new IllegalStateException("El jugador no participa en la partida"));
+      .orElseThrow(() -> new IllegalArgumentException("El jugador no participa en la partida"));
     if (!participante.tieneLoteria(tipoVictoria)) {
       participante.penalizarFalsa();
       return false;
