@@ -215,7 +215,7 @@ public class Dominio implements IReceptorExterno {
     } else if (contenido instanceof EventoMarcarCasilla evento) {
       marcar(evento.jugador(), evento.cartaId());
     } else if (contenido instanceof EventoSeleccionarPatron evento) {
-      cambiarPatron(evento.jugador(), evento.patron());
+      declararPatron(evento.jugador(), evento.patron());
     } else if (contenido instanceof EventoGritarLoteria evento) {
       gritarVictoria(evento.jugador());
     } else if (contenido instanceof EventoCerrarPartida) {
@@ -362,7 +362,7 @@ public class Dominio implements IReceptorExterno {
     }
   }
 
-  private void cambiarPatron(String nombreJugador, String patron) {
+  private void declararPatron(String nombreJugador, String patron) {
     if (partida == null || !partida.estaEnCurso()) {
       publicar(new EventoError("La partida no está en curso"));
       return;
