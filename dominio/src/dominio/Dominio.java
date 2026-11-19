@@ -403,7 +403,7 @@ public class Dominio implements IReceptorExterno {
       return;
     }
     detenerTemporizador();
-    if (!partida.puedeCantar()) {
+    if (partida.obtenerRestantes() == 0 && partida.estaEnCurso()) {
       partida.cerrarPorBarajaAgotada();
     } else {
       partida.finalizar();
