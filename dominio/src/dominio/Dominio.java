@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import serializador.ISerializador;
 
@@ -53,6 +54,8 @@ public class Dominio implements IReceptorExterno {
   private Partida partida;
   private ScheduledExecutorService temporizador;
   private ScheduledExecutorService temporizadorEspera;
+  private ScheduledFuture<?> tareaCartas;
+  private ScheduledFuture<?> tareaEspera;
   private volatile boolean activo;
 
   public Dominio(
@@ -274,7 +277,7 @@ public class Dominio implements IReceptorExterno {
   private void iniciarEspera() {
     detenerEspera();
     temporizadorEspera = crearPlanificador("dominio-espera");
-    temporizadorEspera.schedule(() -> {
+    tareaEspera = temporizadorEspera.schedule(() -> {
       synchronized (candado) {
         if (!activo) {
           return;
@@ -307,7 +310,7 @@ public class Dominio implements IReceptorExterno {
     cantarSiguiente();
     if (partida.estaEnCurso() && partida.puedeCantar()) {
       temporizador = crearPlanificador("dominio-cartas");
-      temporizador.scheduleWithFixedDelay(() -> {
+      tareaCartas = temporizador.scheduleWithFixedDelay(() -> {
         synchronized (candado) {
           if (!activo) {
             return;
@@ -331,8 +334,12 @@ public class Dominio implements IReceptorExterno {
   }
 
   private void detenerEspera() {
+    if (tareaEspera != null) {
+      tareaEspera.cancel(false);
+      tareaEspera = null;
+    }
     if (temporizadorEspera != null) {
-      temporizadorEspera.shutdownNow();
+      temporizadorEspera.shutdown();
       temporizadorEspera = null;
     }
   }
@@ -538,8 +545,12 @@ public class Dominio implements IReceptorExterno {
   }
 
   private void detenerTemporizador() {
+    if (tareaCartas != null) {
+      tareaCartas.cancel(false);
+      tareaCartas = null;
+    }
     if (temporizador != null) {
-      temporizador.shutdownNow();
+      temporizador.shutdown();
       temporizador = null;
     }
   }
