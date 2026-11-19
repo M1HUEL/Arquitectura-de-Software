@@ -42,18 +42,6 @@ public final class Casilla {
     return true;
   }
 
-  boolean desmarcar() {
-    if (!marcada) {
-      return false;
-    }
-    marcada = false;
-    return true;
-  }
-
-  void reiniciar() {
-    marcada = false;
-  }
-
   public boolean contiene(Carta carta) {
     return this.carta.equals(carta);
   }

@@ -51,10 +51,6 @@ public final class Jugador {
     return tablero.cumple(tipoVictoria);
   }
 
-  public int obtenerAciertos() {
-    return tablero.obtenerAciertos();
-  }
-
   void sumarPunto() {
     puntos++;
   }

@@ -67,10 +67,6 @@ public final class Partida {
     return new Partida(UUID.randomUUID().toString(), jugadores, Griton.completo(aleatorio), tipoVictoria);
   }
 
-  public static Partida crear(List<String> nombresJugadores, Random aleatorio) {
-    return crear(nombresJugadores, TipoVictoria.CHORRO, aleatorio);
-  }
-
   public void iniciar() {
     if (estado == EstadoPartida.FINALIZADA) {
       throw new IllegalStateException("La partida ya terminó");
@@ -171,12 +167,6 @@ public final class Partida {
     return jugadores.stream()
       .filter(jugador -> jugador.obtenerId().equals(id))
       .findFirst();
-  }
-
-  public List<Jugador> obtenerJugadoresConLoteria() {
-    return jugadores.stream()
-      .filter(jugador -> jugador.tieneLoteria(tipoVictoria))
-      .toList();
   }
 
   public boolean puedeCantar() {

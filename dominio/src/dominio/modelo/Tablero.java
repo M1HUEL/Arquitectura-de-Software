@@ -67,19 +67,6 @@ public final class Tablero {
     return casilla != null && casilla.marcar();
   }
 
-  boolean desmarcar(Carta carta) {
-    Casilla casilla = buscarCasilla(carta);
-    return casilla != null && casilla.desmarcar();
-  }
-
-  void reiniciar() {
-    for (int fila = 0; fila < FILAS; fila++) {
-      for (int columna = 0; columna < COLUMNAS; columna++) {
-        casillas[fila][columna].reiniciar();
-      }
-    }
-  }
-
   public int obtenerAciertos() {
     int aciertos = 0;
     for (int fila = 0; fila < FILAS; fila++) {
@@ -97,29 +84,6 @@ public final class Tablero {
     for (int fila = 0; fila < FILAS; fila++) {
       for (int columna = 0; columna < COLUMNAS; columna++) {
         resultado.add(casillas[fila][columna]);
-      }
-    }
-    return List.copyOf(resultado);
-  }
-
-  public List<Casilla> obtenerCasillasMarcadas() {
-    List<Casilla> resultado = new ArrayList<>(TOTAL_CARTAS);
-    for (int fila = 0; fila < FILAS; fila++) {
-      for (int columna = 0; columna < COLUMNAS; columna++) {
-        Casilla casilla = casillas[fila][columna];
-        if (casilla.estaMarcada()) {
-          resultado.add(casilla);
-        }
-      }
-    }
-    return List.copyOf(resultado);
-  }
-
-  public List<Carta> obtenerCartas() {
-    List<Carta> resultado = new ArrayList<>(TOTAL_CARTAS);
-    for (int fila = 0; fila < FILAS; fila++) {
-      for (int columna = 0; columna < COLUMNAS; columna++) {
-        resultado.add(casillas[fila][columna].obtenerCarta());
       }
     }
     return List.copyOf(resultado);
