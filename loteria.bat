@@ -15,5 +15,11 @@ if defined JAVA_HOME (
   set "JAVA=java"
 )
 
+if not exist "%BASE%ensamblador\ensamblador.jar" (
+  echo No se encontraron los jars; compilando...
+  call "%BASE%compilar.bat"
+  if errorlevel 1 exit /b 1
+)
+
 "%JAVA%" -cp "%CP%" ensamblador.Main %*
 endlocal
