@@ -55,11 +55,11 @@ public final class Jugador {
     return tablero.obtenerAciertos();
   }
 
-  public void sumarPunto() {
+  void sumarPunto() {
     puntos++;
   }
 
-  public void sumarPuntos(int cantidad) {
+  void sumarPuntos(int cantidad) {
     if (cantidad < 0) {
       throw new IllegalArgumentException("La cantidad de puntos no puede ser negativa");
     }
