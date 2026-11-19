@@ -42,14 +42,6 @@ public class GestorSuscriptores {
     return lista == null ? List.of() : List.copyOf(lista);
   }
 
-  public List<String> obtenerTemas() {
-    return List.copyOf(suscriptores.keySet());
-  }
-
-  public void limpiar() {
-    suscriptores.clear();
-  }
-
   private void validarTema(String tema) {
     if (tema == null || tema.isBlank()) {
       throw new IllegalArgumentException("El tema no puede estar vacío");
