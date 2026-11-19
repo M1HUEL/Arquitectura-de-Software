@@ -291,6 +291,7 @@ public class Dominio implements IReceptorExterno {
             crearPartida(new ArrayList<>(humanos));
           } catch (RuntimeException e) {
             publicarErrorSeguro(e);
+            iniciarEspera();
           }
         }
       }
