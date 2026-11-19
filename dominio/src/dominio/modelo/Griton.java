@@ -10,23 +10,17 @@ import java.util.Set;
 public final class Griton {
 
   private final Baraja baraja;
-  private final Random aleatorio;
   private final Set<Carta> gritadas = new LinkedHashSet<>();
 
-  public Griton(Baraja baraja, Random aleatorio) {
+  public Griton(Baraja baraja) {
     this.baraja = Objects.requireNonNull(baraja, "baraja");
-    this.aleatorio = Objects.requireNonNull(aleatorio, "aleatorio");
   }
 
   public static Griton completo(Random aleatorio) {
     Objects.requireNonNull(aleatorio, "aleatorio");
-    Griton griton = new Griton(new Baraja(CatalogoCartas.obtenerTodas()), aleatorio);
-    griton.barajear();
-    return griton;
-  }
-
-  public void barajear() {
+    Baraja baraja = new Baraja(CatalogoCartas.obtenerTodas());
     baraja.revolver(aleatorio);
+    return new Griton(baraja);
   }
 
   public Carta gritarSiguiente() {
