@@ -131,7 +131,9 @@ public class PanelLateral extends JPanel {
     }
     etiquetaEstado.setText(textoEstado);
 
-    if (local == null) {
+    if (local == null && modelo.obtenerEstadoPartida() == EstadoPartida.NO_INICIADA) {
+      etiquetaJugadorLocal.setText("Esperando a que inicie la partida...");
+    } else if (local == null) {
       etiquetaJugadorLocal.setText(
         "Jugador: " + modelo.obtenerJugadorLocal() + " (no encontrado)");
     } else {
