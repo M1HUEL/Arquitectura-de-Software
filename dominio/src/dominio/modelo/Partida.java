@@ -22,7 +22,7 @@ public final class Partida {
   private final Map<String, Integer> turnoDeTableroLleno = new HashMap<>();
   private EstadoPartida estado;
 
-  public Partida(String id, List<Jugador> jugadores, Griton griton, TipoVictoria tipoVictoria) {
+  Partida(String id, List<Jugador> jugadores, Griton griton, TipoVictoria tipoVictoria) {
     if (id == null || id.isBlank()) {
       throw new IllegalArgumentException("El id de la partida no puede estar vacío");
     }
