@@ -80,6 +80,7 @@ public final class Partida {
   }
 
   public void finalizar() {
+    exigirAlgunEstado(EstadoPartida.EN_CURSO, EstadoPartida.PAUSADA);
     if (ganadores.isEmpty()) {
       int mejorPuntaje = -1;
       Jugador mejorJugador = null;
@@ -198,13 +199,21 @@ public final class Partida {
   }
 
   private void exigirEstado(EstadoPartida esperado) {
-    Objects.requireNonNull(esperado, "esperado");
+    exigirAlgunEstado(esperado);
+  }
+
+  private void exigirAlgunEstado(EstadoPartida... permitidos) {
+    Objects.requireNonNull(permitidos, "permitidos");
     if (estado == EstadoPartida.FINALIZADA) {
       throw new IllegalStateException("La partida ya terminó");
     }
-    if (estado != esperado) {
-      throw new IllegalStateException(
-        "La partida no está en el estado " + esperado + " (estado actual: " + estado + ")");
+    for (EstadoPartida permitido : permitidos) {
+      Objects.requireNonNull(permitido, "permitido");
+      if (estado == permitido) {
+        return;
+      }
     }
+    throw new IllegalStateException(
+      "La partida no está en un estado válido para esta operación (estado actual: " + estado + ")");
   }
 }
