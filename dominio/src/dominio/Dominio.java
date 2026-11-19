@@ -272,14 +272,18 @@ public class Dominio implements IReceptorExterno {
           if (!activo) {
             return;
           }
-          if (humanos.isEmpty()) {
-            System.out.println("No hay jugadores conectados; se reinicia la espera");
-            iniciarEspera();
-            return;
+          try {
+            if (humanos.isEmpty()) {
+              System.out.println("No hay jugadores conectados; se reinicia la espera");
+              iniciarEspera();
+              return;
+            }
+            System.out.println("Tiempo de espera terminado. Iniciando partida con: "
+              + humanos);
+            crearPartida(new ArrayList<>(humanos));
+          } catch (RuntimeException e) {
+            publicarError(e);
           }
-          System.out.println("Tiempo de espera terminado. Iniciando partida con: "
-            + humanos);
-          crearPartida(new ArrayList<>(humanos));
         }
       }
     }, esperaMs);
@@ -300,8 +304,13 @@ public class Dominio implements IReceptorExterno {
         @Override
         public void run() {
           synchronized (candado) {
-            if (activo) {
+            if (!activo) {
+              return;
+            }
+            try {
               cantarSiguiente();
+            } catch (RuntimeException e) {
+              publicarError(e);
             }
           }
         }
