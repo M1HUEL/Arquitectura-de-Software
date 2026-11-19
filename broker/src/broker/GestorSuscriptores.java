@@ -13,7 +13,7 @@ public class GestorSuscriptores {
       if (host == null || host.isBlank()) {
         throw new IllegalArgumentException("El host no puede estar vacío");
       }
-      if (puerto < 0 || puerto > 65535) {
+      if (puerto <= 0 || puerto > 65535) {
         throw new IllegalArgumentException("El puerto no es válido: " + puerto);
       }
     }
