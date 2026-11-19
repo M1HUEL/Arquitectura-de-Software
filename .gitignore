@@ -10,6 +10,7 @@ nb-configuration.xml
 
 # Java
 *.class
+*.jar
 hs_err_pid*
 replay_pid*
 
