@@ -150,7 +150,7 @@ public final class Partida {
     exigirEnCurso();
     Jugador participante = buscarJugador(jugador.obtenerId())
       .orElseThrow(() -> new IllegalStateException("El jugador no participa en la partida"));
-    if (!participante.tieneLoteria(TipoVictoria.TABLA_LLENA)) {
+    if (!participante.tieneLoteria(tipoVictoria)) {
       return false;
     }
     Integer turnoDeLlenado = turnoDeTableroLleno.get(participante.obtenerId());
@@ -175,7 +175,7 @@ public final class Partida {
 
   public List<Jugador> obtenerJugadoresConLoteria() {
     return jugadores.stream()
-      .filter(jugador -> jugador.tieneLoteria(TipoVictoria.TABLA_LLENA))
+      .filter(jugador -> jugador.tieneLoteria(tipoVictoria))
       .toList();
   }
 
