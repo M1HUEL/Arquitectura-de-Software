@@ -36,7 +36,11 @@ public class ModeloJuego implements Modelo {
 
   @Override
   public void cerrar() {
-    fachada.cerrar();
+    try {
+      fachada.cerrar();
+    } catch (RuntimeException e) {
+      registrarError("No se pudo cerrar la partida: " + e.getMessage());
+    }
   }
 
   public void actualizar(
@@ -62,7 +66,11 @@ public class ModeloJuego implements Modelo {
 
   public void seleccionarCasilla(Carta carta, Jugador jugador) {
     if (esCasillaValida(carta, jugador)) {
-      fachada.seleccionarCasilla(carta);
+      try {
+        fachada.seleccionarCasilla(carta);
+      } catch (RuntimeException e) {
+        registrarError("No se pudo enviar la jugada: " + e.getMessage());
+      }
       return;
     }
     notificarObservadores(TipoMensaje.CASILLA_INVALIDA);
@@ -71,7 +79,12 @@ public class ModeloJuego implements Modelo {
   public void seleccionarPatron(Jugador jugador, Patron patron) {
     boolean valido = puedeEnviarPatron(jugador, patron);
     if (valido) {
-      fachada.seleccionarPatron(patron);
+      try {
+        fachada.seleccionarPatron(patron);
+      } catch (RuntimeException e) {
+        registrarError("No se pudo enviar el patrón: " + e.getMessage());
+        return;
+      }
     }
     notificarObservadores(valido
       ? TipoMensaje.PATRON_VALIDO : TipoMensaje.PATRON_INVALIDO);
@@ -80,7 +93,12 @@ public class ModeloJuego implements Modelo {
   public void seleccionarVictoria(Jugador jugador, Patron patron) {
     boolean valido = puedeEnviarPatron(jugador, patron);
     if (valido) {
-      fachada.seleccionarVictoria(patron);
+      try {
+        fachada.seleccionarVictoria(patron);
+      } catch (RuntimeException e) {
+        registrarError("No se pudo enviar la victoria: " + e.getMessage());
+        return;
+      }
     }
     notificarObservadores(valido
       ? TipoMensaje.VICTORIA_VALIDA : TipoMensaje.VICTORIA_INVALIDA);
