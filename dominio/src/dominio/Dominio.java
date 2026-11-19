@@ -42,6 +42,8 @@ public class Dominio implements IReceptorExterno {
   private final String temaEventosCliente;
   private final String temaEventosDominio;
   private final long intervaloMs;
+  /* Compartido por tableros y baraja: el orden de creación fija la secuencia.
+     Todo su uso ocurre bajo candado. */
   private final Random aleatorio;
   private final long esperaMs;
   private final List<String> humanos = new ArrayList<>();
