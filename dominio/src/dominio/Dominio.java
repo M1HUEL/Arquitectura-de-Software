@@ -194,7 +194,7 @@ public class Dominio implements IReceptorExterno {
     try {
       contenido = serializador.deserializar(datos, Object.class);
     } catch (RuntimeException e) {
-      publicarError(e);
+      publicarErrorSeguro(e);
       return;
     }
     synchronized (candado) {
@@ -286,7 +286,7 @@ public class Dominio implements IReceptorExterno {
               + humanos);
             crearPartida(new ArrayList<>(humanos));
           } catch (RuntimeException e) {
-            publicarError(e);
+            publicarErrorSeguro(e);
           }
         }
       }
@@ -314,7 +314,7 @@ public class Dominio implements IReceptorExterno {
             try {
               cantarSiguiente();
             } catch (RuntimeException e) {
-              publicarError(e);
+              publicarErrorSeguro(e);
             }
           }
         }
@@ -360,7 +360,7 @@ public class Dominio implements IReceptorExterno {
       }
       publicar(new EventoEstadoSincronizado(estadoJuego()));
     } catch (RuntimeException e) {
-      publicarError(e);
+      publicarErrorSeguro(e);
     }
   }
 
@@ -383,7 +383,7 @@ public class Dominio implements IReceptorExterno {
       }
       publicar(new EventoEstadoSincronizado(estadoJuego()));
     } catch (RuntimeException e) {
-      publicarError(e);
+      publicarErrorSeguro(e);
     }
   }
 
@@ -407,7 +407,7 @@ public class Dominio implements IReceptorExterno {
       detenerTemporizador();
       publicar(new EventoPartidaGanada(estadoJuego()));
     } catch (RuntimeException e) {
-      publicarError(e);
+      publicarErrorSeguro(e);
     }
   }
 
@@ -465,6 +465,14 @@ public class Dominio implements IReceptorExterno {
     String mensaje = e.getMessage();
     publicar(new EventoError(mensaje == null || mensaje.isBlank()
       ? "Error inesperado del dominio" : mensaje));
+  }
+
+  private void publicarErrorSeguro(RuntimeException e) {
+    try {
+      publicarError(e);
+    } catch (RuntimeException ignorada) {
+      System.err.println("No se pudo publicar el error: " + ignorada.getMessage());
+    }
   }
 
   private void publicar(Object evento) {
