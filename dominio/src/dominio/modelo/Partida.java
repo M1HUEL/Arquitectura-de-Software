@@ -206,9 +206,6 @@ public final class Partida {
 
   private void exigirEstado(EstadoPartida... permitidos) {
     Objects.requireNonNull(permitidos, "permitidos");
-    if (estado == EstadoPartida.FINALIZADA) {
-      throw new IllegalStateException("La partida ya terminó");
-    }
     for (EstadoPartida permitido : permitidos) {
       Objects.requireNonNull(permitido, "permitido");
       if (estado == permitido) {
