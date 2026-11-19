@@ -1,0 +1,152 @@
+@startuml
+title Analisis - Iniciar partida (BCE)
+
+actor "Jugador" as ActorJugador
+
+package Boundary {
+  class PantallaSala <<boundary>> {
+    +mostrarJugadores(jugadores): void
+    +notificarConexion(nombre): void
+    +solicitarTarjeta(jugador): void
+    +obtenerSelecciones(): Map
+    +mostrarPartidaIniciada(): void
+    +aceptarInicio(jugador): void
+  }
+
+  class CanalConexion <<boundary>> {
+    +jugadorConectado(nombre): void
+  }
+
+  class Temporizador <<boundary>> {
+    +iniciar(intervaloMs: long): void
+    +detener(): void
+  }
+}
+
+package Control {
+  class ControladorIniciarPartida <<control>> {
+    -jugadores: List~Jugador~
+    -aceptaciones: Set~Jugador~
+    +registrarJugador(nombre): void
+    +aceptarInicio(jugador): void
+    +todosAceptaron(): boolean
+    +hayCuatroJugadores(): boolean
+    +solicitarTarjetas(): void
+    +recibirTarjetas(selecciones): void
+    +iniciar(): void
+  }
+}
+
+package Entity {
+  class Partida <<entity>> {
+    -id: String
+    -estado: EstadoPartida
+    -jugadores: List~Jugador~
+    -mazo: Mazo
+    +crear(jugadores): Partida
+    +asignarTarjetas(selecciones): void
+    +iniciar(): void
+  }
+
+  class Jugador <<entity>> {
+    -nombre: String
+    -tarjeta: TarjetaLoteria
+    -aceptoInicio: boolean
+    +aceptarInicio(): void
+    +elegirTarjeta(tarjeta): void
+  }
+
+  class TarjetaLoteria <<entity>> {
+    -casillas: List~CartaLoteria~
+  }
+
+  class Mazo <<entity>> {
+    -cartas: List~CartaLoteria~
+    +barajar(): void
+    +sacarSiguiente(): CartaLoteria
+  }
+
+  class CartaLoteria <<entity>> {
+    -id: int
+    -nombre: String
+  }
+
+  enum EstadoPartida <<entity>> {
+    CREADA
+    EN_CURSO
+  }
+}
+
+ActorJugador --> PantallaSala
+PantallaSala --> ControladorIniciarPartida
+CanalConexion --> ControladorIniciarPartida
+ControladorIniciarPartida --> Temporizador
+ControladorIniciarPartida --> Partida
+ControladorIniciarPartida --> Jugador
+ControladorIniciarPartida --> Mazo
+
+Partida *-- "1..4" Jugador
+Partida *-- "1" Mazo
+Partida --> EstadoPartida
+Jugador --> "0..1" TarjetaLoteria
+TarjetaLoteria "16" o-- CartaLoteria
+Mazo "0..54" o-- CartaLoteria
+
+@enduml
+
+@startuml
+title Secuencia - Iniciar partida
+
+actor "Jugador 1..4" as J
+participant "PantallaSala\n<<boundary>>" as Vista
+participant "CanalConexion\n<<boundary>>" as Canal
+participant "ControladorIniciarPartida\n<<control>>" as Control
+participant "Partida\n<<entity>>" as Partida
+participant "Jugador\n<<entity>>" as JugadorE
+participant "Mazo\n<<entity>>" as Mazo
+participant "Temporizador\n<<boundary>>" as Timer
+
+create Partida
+Control -> Partida: crear()
+
+loop hasta que se conectan 4 jugadores
+  J -> Vista: conectar(nombre)
+  Vista -> Canal: registrarConexion(nombre)
+  Canal -> Control: jugadorConectado(nombre)
+  Control -> JugadorE: crear(nombre)
+  Control -> Partida: agregarJugador(jugador)
+  Control -> Vista: mostrarJugadores()
+end
+
+alt todos los jugadores aceptan la solicitud de inicio
+  loop por cada jugador
+    J -> Vista: aceptarInicio()
+    Vista -> Control: aceptarInicio(jugador)
+    Control -> JugadorE: aceptarInicio()
+  end
+  Control -> Control: todosAceptaron() == true
+else se conectan 4 jugadores
+  Canal -> Control: jugadorConectado(jugador4)
+  Control -> Control: hayCuatroJugadores() == true
+end
+
+Control -> Vista: solicitarSeleccionDeTarjeta()
+
+loop por cada jugador
+  Vista -> J: eligeTuTarjetaLoteria()
+  J -> Vista: tarjetaSeleccionada(carton)
+  Vista -> Control: registrarTarjeta(jugador, carton)
+  Control -> JugadorE: elegirTarjeta(carton)
+end
+
+Control -> Partida: asignarTarjetas()
+Control -> Mazo: barajar()
+
+Control -> Timer: iniciar(intervaloMs)
+Control -> Partida: iniciar()
+Partida -> Partida: estado = EN_CURSO
+
+Control -> Vista: mostrarPartidaIniciada()
+Vista --> J: partida iniciada
+
+@enduml
