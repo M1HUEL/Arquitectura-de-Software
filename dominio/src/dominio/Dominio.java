@@ -52,7 +52,7 @@ public class Dominio implements IReceptorExterno {
   private Partida partida;
   private Timer temporizador;
   private Timer temporizadorEspera;
-  private boolean activo;
+  private volatile boolean activo;
 
   public Dominio(
     ISerializador serializador,
