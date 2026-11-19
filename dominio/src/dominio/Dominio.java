@@ -207,7 +207,9 @@ public class Dominio implements IReceptorExterno {
 
   private void procesar(Object contenido) {
     if (contenido instanceof EventoIniciarPartida evento) {
-      if (esperaMs > 0 && (partida == null || partida.estaFinalizada())) {
+      if (partida != null && partida.estaFinalizada()) {
+        publicar(new EventoError("La partida ya terminó"));
+      } else if (esperaMs > 0 && partida == null) {
         registrarJugador(evento.jugador());
       } else {
         iniciarPartida(evento.jugador());
