@@ -62,11 +62,11 @@ public class ModeloJuego implements Modelo {
   }
 
   public void seleccionarCasilla(Carta carta, Jugador jugador) {
-    TipoMensaje resultado = validarCasilla(carta, jugador);
-    if (resultado == TipoMensaje.CASILLA_VALIDA) {
+    if (esCasillaValida(carta, jugador)) {
       fachada.seleccionarCasilla(carta);
+      return;
     }
-    notificarObservadores(resultado);
+    notificarObservadores(TipoMensaje.CASILLA_INVALIDA);
   }
 
   public void seleccionarPatron(Jugador jugador, Patron patron) {
@@ -87,20 +87,20 @@ public class ModeloJuego implements Modelo {
       ? TipoMensaje.VICTORIA_VALIDA : TipoMensaje.VICTORIA_INVALIDA);
   }
 
-  private TipoMensaje validarCasilla(Carta carta, Jugador jugador) {
+  private boolean esCasillaValida(Carta carta, Jugador jugador) {
     if (!puedeJugar(jugador) || carta == null) {
-      return TipoMensaje.CASILLA_INVALIDA;
+      return false;
     }
     if (!jugador.obtenerCartas().contains(carta)) {
-      return TipoMensaje.CASILLA_INVALIDA;
+      return false;
     }
     if (!cartasCantadas.contains(carta)) {
-      return TipoMensaje.CASILLA_INVALIDA;
+      return false;
     }
     if (jugador.estaSeleccionada(carta)) {
-      return TipoMensaje.CASILLA_INVALIDA;
+      return false;
     }
-    return TipoMensaje.CASILLA_VALIDA;
+    return true;
   }
 
   private boolean puedeEnviarPatron(Jugador jugador, Patron patron) {

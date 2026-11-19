@@ -79,9 +79,6 @@ public class VistaJuego extends JFrame implements Observador {
       return;
     }
     switch (mensaje) {
-      case CASILLA_VALIDA:
-        mostrarMensajeCasillaValida();
-        break;
       case CASILLA_INVALIDA:
         mostrarMensajeCasillaInvalida();
         break;
@@ -133,10 +130,6 @@ public class VistaJuego extends JFrame implements Observador {
       }
     }
     return null;
-  }
-
-  public void mostrarMensajeCasillaValida() {
-    JOptionPane.showMessageDialog(this, "La casilla es válida.");
   }
 
   public void mostrarMensajeCasillaInvalida() {
