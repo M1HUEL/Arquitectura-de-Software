@@ -1,10 +1,8 @@
 package dominio.modelo;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -19,7 +17,6 @@ public final class Partida {
   private final Griton griton;
   private final TipoVictoria tipoVictoria;
   private final List<Jugador> ganadores;
-  private final Map<String, Integer> turnoDeTableroLleno = new HashMap<>();
   private EstadoPartida estado;
 
   Partida(String id, List<Jugador> jugadores, Griton griton, TipoVictoria tipoVictoria) {
@@ -124,23 +121,16 @@ public final class Partida {
     boolean marcada = participante.marcar(carta);
     if (marcada) {
       participante.sumarPunto();
-      if (participante.obtenerTablero().tieneTableroLleno()) {
-        turnoDeTableroLleno.putIfAbsent(participante.obtenerId(), griton.obtenerTurno());
-      }
     }
     return marcada;
   }
 
-  public boolean gritarLoteria(Jugador jugador) {
-    Objects.requireNonNull(jugador, "jugador");
+  public boolean gritarLoteria(String jugadorId) {
+    Objects.requireNonNull(jugadorId, "jugadorId");
     exigirEnCurso();
-    Jugador participante = buscarJugador(jugador.obtenerId())
+    Jugador participante = buscarJugador(jugadorId)
       .orElseThrow(() -> new IllegalStateException("El jugador no participa en la partida"));
     if (!participante.tieneLoteria(tipoVictoria)) {
-      return false;
-    }
-    Integer turnoDeLlenado = turnoDeTableroLleno.get(participante.obtenerId());
-    if (turnoDeLlenado == null || turnoDeLlenado != griton.obtenerTurno()) {
       return false;
     }
     if (!ganadores.contains(participante)) {
