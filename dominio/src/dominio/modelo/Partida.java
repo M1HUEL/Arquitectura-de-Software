@@ -107,6 +107,14 @@ public final class Partida {
     return griton.gritarSiguiente();
   }
 
+  public void cerrarPorBarajaAgotada() {
+    exigirEnCurso();
+    if (griton.puedeGritar()) {
+      throw new IllegalStateException("Todavía quedan cartas por cantar");
+    }
+    finalizar();
+  }
+
   public boolean marcar(String jugadorId, Carta carta) {
     Objects.requireNonNull(jugadorId, "jugadorId");
     Objects.requireNonNull(carta, "carta");

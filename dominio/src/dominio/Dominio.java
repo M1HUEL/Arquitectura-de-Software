@@ -426,7 +426,11 @@ public class Dominio implements IReceptorExterno {
   private void finalizarPartida() {
     detenerTemporizador();
     if (partida != null && partida.estaEnCurso()) {
-      partida.finalizar();
+      if (!partida.puedeCantar()) {
+        partida.cerrarPorBarajaAgotada();
+      } else {
+        partida.finalizar();
+      }
     }
     publicar(new EventoPartidaFinalizada(estadoJuego()));
   }
