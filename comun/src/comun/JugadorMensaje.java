@@ -9,7 +9,7 @@ public record JugadorMensaje(
   String nombre,
   List<CartaMensaje> cartas,
   List<Integer> marcadas,
-  int aciertos
+  int puntos
 ) implements Serializable {
 
   public JugadorMensaje {

@@ -105,7 +105,7 @@ public class ManejadorSocket implements IReceptorExterno {
           jugador.marcarCasilla(carta);
         }
       }
-      jugador.establecerPuntaje(mensaje.aciertos());
+      jugador.establecerPuntaje(mensaje.puntos());
       resultado.add(jugador);
     }
     return List.copyOf(resultado);
