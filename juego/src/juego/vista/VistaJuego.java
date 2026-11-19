@@ -133,23 +133,29 @@ public class VistaJuego extends JFrame implements Observador {
   }
 
   public void mostrarMensajeCasillaInvalida() {
-    JOptionPane.showMessageDialog(this, "La casilla no es válida.");
+    JOptionPane.showMessageDialog(
+      this, "La casilla no es válida.", "Casilla no válida", JOptionPane.WARNING_MESSAGE);
   }
 
   public void mostrarMensajePatronValido() {
-    JOptionPane.showMessageDialog(this, "El patrón es válido.");
+    JOptionPane.showMessageDialog(
+      this, "El patrón es válido.", "Patrón válido", JOptionPane.INFORMATION_MESSAGE);
   }
 
   public void mostrarMensajePatronInvalido() {
-    JOptionPane.showMessageDialog(this, "El patrón no está completo en el tablero.");
+    JOptionPane.showMessageDialog(
+      this, "El patrón no está completo en el tablero.",
+      "Patrón incompleto", JOptionPane.WARNING_MESSAGE);
   }
 
   public void mostrarMensajeVictoriaValida() {
-    JOptionPane.showMessageDialog(this, "Victoria válida.");
+    JOptionPane.showMessageDialog(
+      this, "Victoria válida.", "Victoria válida", JOptionPane.INFORMATION_MESSAGE);
   }
 
   public void mostrarMensajeVictoriaInvalida() {
-    JOptionPane.showMessageDialog(this, "Victoria inválida.");
+    JOptionPane.showMessageDialog(
+      this, "Victoria inválida.", "Victoria no válida", JOptionPane.WARNING_MESSAGE);
   }
 
   public void mostrarMensajeError() {
