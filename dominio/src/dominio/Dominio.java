@@ -348,7 +348,7 @@ public class Dominio implements IReceptorExterno {
         continue;
       }
       try {
-        partida.marcar(jugador, carta);
+        partida.marcar(jugador.obtenerId(), carta);
       } catch (RuntimeException e) {
         System.err.println("No se pudo marcar al oponente " + jugador.obtenerNombre()
           + ": " + e.getMessage());
@@ -368,7 +368,7 @@ public class Dominio implements IReceptorExterno {
         publicar(new EventoError("El jugador no participa en la partida"));
         return;
       }
-      if (!partida.marcar(jugador, carta)) {
+      if (!partida.marcar(jugador.obtenerId(), carta)) {
         publicar(new EventoError("La casilla ya estaba marcada"));
         return;
       }

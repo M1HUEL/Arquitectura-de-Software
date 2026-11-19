@@ -119,11 +119,11 @@ public final class Partida {
     return griton.gritarSiguiente();
   }
 
-  public boolean marcar(Jugador jugador, Carta carta) {
-    Objects.requireNonNull(jugador, "jugador");
+  public boolean marcar(String jugadorId, Carta carta) {
+    Objects.requireNonNull(jugadorId, "jugadorId");
     Objects.requireNonNull(carta, "carta");
     exigirEnCurso();
-    Jugador participante = buscarJugador(jugador.obtenerId())
+    Jugador participante = buscarJugador(jugadorId)
       .orElseThrow(() -> new IllegalStateException("El jugador no participa en la partida"));
     if (!griton.fueGritada(carta)) {
       throw new IllegalArgumentException("La carta todavía no se ha cantado");
