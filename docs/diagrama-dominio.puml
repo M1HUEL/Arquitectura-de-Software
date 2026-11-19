@@ -1,0 +1,202 @@
+@startuml Dominio
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+title Componente dominio - diagrama de clases
+
+package "comunicacion.api" <<externo>> {
+  interface IReceptorExterno {
+    +alRecibir(datos: byte[]): void
+  }
+  interface IDispatcher {
+    +enviar(host: String, puerto: int, datos: byte[]): void
+  }
+}
+
+package "serializador" <<externo>> {
+  interface ISerializador {
+    +serializar(objeto: Object): byte[]
+    +deserializar(datos: byte[], tipo: Class~T~): T
+  }
+}
+
+package dominio {
+  class Dominio {
+    -serializador: ISerializador
+    -dispatcher: IDispatcher
+    -hostBroker: String
+    -temaEventosCliente: String
+    -temaEventosDominio: String
+    -intervaloMs: long
+    -esperaMs: long
+    -aleatorio: Random
+    -humanos: List~String~
+    -partida: Partida
+    -candado: Object
+    -temporizador: ScheduledExecutorService
+    -temporizadorEspera: ScheduledExecutorService
+    -tareaCartas: ScheduledFuture~?~
+    -tareaEspera: ScheduledFuture~?~
+    --
+    +alRecibir(byte[]): void
+    -procesar(Object): void
+    -registrarJugador(String): void
+    -iniciarPartida(String): void
+    -crearPartida(List~String~): void
+    -iniciarEspera(): void
+    -detenerEspera(): void
+    -cantarSiguiente(): void
+    -detenerTemporizador(): void
+    -finalizarPartida(): void
+    -publicar(Object): void
+    -estadoJuego(): EstadoJuego
+  }
+}
+
+package dominio.modelo {
+  class Partida {
+    -id: String
+    -jugadores: List~Jugador~
+    -griton: Griton
+    -tipoVictoria: TipoVictoria
+    -estado: EstadoPartida
+    -ganador: Jugador
+    --
+    +{static} crear(List~String~, TipoVictoria, Random): Partida
+    +iniciar(): void
+    +pausar(): void
+    +reanudar(): void
+    +finalizar(): void
+    +cantarSiguiente(): Carta
+    +marcar(String, Carta): boolean
+    +declararPatron(String, TipoVictoria): boolean
+    +gritarLoteria(String): boolean
+    +cerrarPorBarajaAgotada(): void
+    +puedeCantar(): boolean
+  }
+
+  class Griton {
+    -baraja: Baraja
+    -gritadas: SequencedSet~Carta~
+    --
+    +{static} completo(Random): Griton
+    +gritarSiguiente(): Carta
+    +fueGritada(Carta): boolean
+    +puedeGritar(): boolean
+    +obtenerTurno(): int
+    +obtenerRestantes(): int
+    +obtenerUltimaCarta(): Optional~Carta~
+  }
+
+  class Baraja {
+    -cartas: List~Carta~
+    --
+    +revolver(Random): void
+    +sacarSiguiente(): Carta
+    +estaVacia(): boolean
+    +obtenerRestantes(): int
+    +obtenerCartasRestantes(): List~Carta~
+  }
+
+  class Jugador {
+    +{static} PUNTOS_POR_CARTA = 1
+    +{static} PUNTOS_POR_PATRON = 5
+    +{static} PUNTOS_POR_LOTERIA = 10
+    +{static} PENALIZACION_FALSA = 3
+    --
+    -id: String
+    -nombre: String
+    -tablero: Tablero
+    -patronesPuntuados: Set~TipoVictoria~
+    -puntos: int
+    --
+    +tieneLoteria(TipoVictoria): boolean
+    +obtenerPuntos(): int
+    ~marcar(Carta): boolean
+    ~declararPatron(TipoVictoria): boolean
+    ~premiarLoteria(): void
+    ~penalizarFalsa(): void
+  }
+
+  class Tablero {
+    +{static} FILAS = 4
+    +{static} COLUMNAS = 4
+    +{static} TOTAL_CARTAS = 16
+    --
+    -casillas: Casilla[][]
+    --
+    +{static} generar(Random): Tablero
+    +contiene(Carta): boolean
+    +cumple(TipoVictoria): boolean
+    +obtenerAciertos(): int
+    +obtenerCartasMarcadas(): List~Carta~
+    ~marcar(Carta): boolean
+  }
+
+  class Casilla {
+    -fila: int
+    -columna: int
+    -carta: Carta
+    -marcada: boolean
+    --
+    +estaMarcada(): boolean
+    +contiene(Carta): boolean
+    ~marcar(): boolean
+  }
+
+  class Carta {
+    -id: int
+    -nombre: String
+    --
+    +obtenerId(): int
+    +obtenerNombre(): String
+  }
+
+  class CatalogoCartas {
+    +{static} obtenerTodas(): List~Carta~
+  }
+
+  enum EstadoPartida {
+    CREADA
+    EN_CURSO
+    PAUSADA
+    FINALIZADA
+  }
+
+  enum TipoVictoria {
+    CHORRO("Chorro")
+    CUATRO_ESQUINAS("Cuatro esquinas")
+    CENTRO("Centro")
+    TABLA_LLENA("Tablero lleno")
+    --
+    +obtenerDescripcion(): String
+  }
+}
+
+' Relaciones con el exterior
+Dominio ..|> IReceptorExterno
+Dominio --> ISerializador
+Dominio --> IDispatcher
+Dominio ..> EstadoJuego : publica en eventos
+
+' Composición: el todo controla el ciclo de vida
+Dominio "0..1" *-- "1" Partida : partida actual
+Partida *-- "1" Griton
+Partida *-- "1..*" Jugador
+Partida "1" --> "1" TipoVictoria : fijo TABLA_LLENA
+Partida --> EstadoPartida
+Partida "0..1" o-- Jugador : ganador
+Griton *-- "1" Baraja
+Griton "1" o-- "0..54" Carta : gritadas (en orden)
+Baraja "1" *-- "0..54" Carta : restantes
+Jugador *-- "1" Tablero
+Jugador "1" --> "0..4" TipoVictoria : patrones puntuados
+Tablero *-- "16" Casilla : 4x4
+Casilla "1" --> "1" Carta
+
+' Fábricas / creación
+Griton ..> CatalogoCartas : completo()
+Tablero ..> CatalogoCartas : generar()
+CatalogoCartas ..> Carta : crea las 54
+
+@enduml
