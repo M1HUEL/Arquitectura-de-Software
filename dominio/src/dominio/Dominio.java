@@ -279,7 +279,7 @@ public class Dominio implements IReceptorExterno {
     temporizadorEspera = crearPlanificador("dominio-espera");
     tareaEspera = temporizadorEspera.schedule(() -> {
       synchronized (candado) {
-        if (!activo) {
+        if (!activo || partida != null) {
           return;
         }
         try {
