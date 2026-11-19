@@ -113,6 +113,15 @@ public final class Partida {
     return participante.marcar(carta);
   }
 
+  public boolean declararPatron(String jugadorId, TipoVictoria patron) {
+    Objects.requireNonNull(jugadorId, "jugadorId");
+    Objects.requireNonNull(patron, "patron");
+    exigirEnCurso();
+    Jugador participante = buscarJugador(jugadorId)
+      .orElseThrow(() -> new IllegalStateException("El jugador no participa en la partida"));
+    return participante.declararPatron(patron);
+  }
+
   public boolean gritarLoteria(String jugadorId) {
     Objects.requireNonNull(jugadorId, "jugadorId");
     exigirEnCurso();
@@ -181,6 +190,10 @@ public final class Partida {
 
   public List<Carta> obtenerCartasRestantes() {
     return griton.obtenerCartasRestantes();
+  }
+
+  public int obtenerRestantes() {
+    return griton.obtenerRestantes();
   }
 
   public Optional<Carta> obtenerUltimaCarta() {

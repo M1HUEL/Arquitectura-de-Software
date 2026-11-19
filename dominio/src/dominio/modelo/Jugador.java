@@ -51,16 +51,20 @@ public final class Jugador {
       return false;
     }
     puntos += PUNTOS_POR_CARTA;
-    for (TipoVictoria patron : TipoVictoria.values()) {
-      if (tieneLoteria(patron) && patronesPuntuados.add(patron)) {
-        puntos += PUNTOS_POR_PATRON;
-      }
-    }
     return true;
   }
 
   public boolean tieneLoteria(TipoVictoria tipoVictoria) {
     return tablero.cumple(tipoVictoria);
+  }
+
+  boolean declararPatron(TipoVictoria patron) {
+    Objects.requireNonNull(patron, "patron");
+    if (!tieneLoteria(patron) || !patronesPuntuados.add(patron)) {
+      return false;
+    }
+    puntos += PUNTOS_POR_PATRON;
+    return true;
   }
 
   void premiarLoteria() {

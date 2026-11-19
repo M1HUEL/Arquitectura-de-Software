@@ -2,6 +2,16 @@
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
-        <group/>
+        <group>
+            <file>file:/C:/Proyecto%20de%20Arquitectura/comun/src/comun/CartaMensaje.java</file>
+            <file>file:/C:/Proyecto%20de%20Arquitectura/comun/src/comun/CartasLoteria.java</file>
+            <file>file:/C:/Proyecto%20de%20Arquitectura/comun/src/comun/EventoBroker.java</file>
+            <file>file:/C:/Proyecto%20de%20Arquitectura/comun/src/comun/EstadoJuego.java</file>
+            <file>file:/C:/Proyecto%20de%20Arquitectura/comun/src/comun/JugadorMensaje.java</file>
+            <file>file:/C:/Proyecto%20de%20Arquitectura/comun/src/comun/evento/EventoEstadoSincronizado.java</file>
+            <file>file:/C:/Proyecto%20de%20Arquitectura/comun/src/comun/evento/EventoIniciarPartida.java</file>
+            <file>file:/C:/Proyecto%20de%20Arquitectura/comun/src/comun/evento/EventoCartaCantada.java</file>
+            <file>file:/C:/Proyecto%20de%20Arquitectura/comun/src/comun/evento/EventoCerrarPartida.java</file>
+        </group>
     </open-files>
 </project-private>

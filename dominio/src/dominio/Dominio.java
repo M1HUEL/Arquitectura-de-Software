@@ -33,8 +33,7 @@ import serializador.ISerializador;
 public class Dominio implements IReceptorExterno {
 
   private static final long INTERVALO_POR_DEFECTO = 3000L;
-  private static final String PATRON_POR_DEFECTO = "CHORRO";
-  private static final int JUGADORES_MINIMOS = 3;
+  private static final TipoVictoria PATRON_VICTORIA = TipoVictoria.TABLA_LLENA;
 
   private final ISerializador serializador;
   private final IDispatcher dispatcher;
@@ -49,7 +48,6 @@ public class Dominio implements IReceptorExterno {
   private final Object candado = new Object();
 
   private Partida partida;
-  private String patronActual = PATRON_POR_DEFECTO;
   private Timer temporizador;
   private Timer temporizadorEspera;
   private boolean activo;
@@ -169,12 +167,14 @@ public class Dominio implements IReceptorExterno {
   }
 
   public void iniciar() {
-    if (activo) {
-      return;
-    }
-    activo = true;
-    if (esperaMs > 0) {
-      iniciarEspera();
+    synchronized (candado) {
+      if (activo) {
+        return;
+      }
+      activo = true;
+      if (esperaMs > 0) {
+        iniciarEspera();
+      }
     }
   }
 
@@ -188,7 +188,13 @@ public class Dominio implements IReceptorExterno {
 
   @Override
   public void alRecibir(byte[] datos) {
-    Object contenido = serializador.deserializar(datos, Object.class);
+    Object contenido;
+    try {
+      contenido = serializador.deserializar(datos, Object.class);
+    } catch (RuntimeException e) {
+      publicarError(e);
+      return;
+    }
     synchronized (candado) {
       if (!activo) {
         return;
@@ -239,7 +245,7 @@ public class Dominio implements IReceptorExterno {
       publicar(new EventoError("El jugador no participa en la partida"));
       return;
     }
-    crearPartida(new ArrayList<>(humanos), true);
+    crearPartida(new ArrayList<>(humanos));
   }
 
   private void registrarJugador(String jugador) {
@@ -247,13 +253,11 @@ public class Dominio implements IReceptorExterno {
       publicar(new EventoError("El nombre del jugador no puede estar vacío"));
       return;
     }
-    synchronized (candado) {
-      String limpio = jugador.trim();
-      if (!contieneNombre(humanos, limpio)) {
-        humanos.add(limpio);
-        System.out.println("Jugador conectado: " + limpio
-          + " (" + humanos.size() + " en espera)");
-      }
+    String limpio = jugador.trim();
+    if (!contieneNombre(humanos, limpio)) {
+      humanos.add(limpio);
+      System.out.println("Jugador conectado: " + limpio
+        + " (" + humanos.size() + " en espera)");
     }
     publicar(new EventoEstadoSincronizado(estadoJuego()));
   }
@@ -275,7 +279,7 @@ public class Dominio implements IReceptorExterno {
           }
           System.out.println("Tiempo de espera terminado. Iniciando partida con: "
             + humanos);
-          crearPartida(new ArrayList<>(humanos), false);
+          crearPartida(new ArrayList<>(humanos));
         }
       }
     }, esperaMs);
@@ -283,20 +287,10 @@ public class Dominio implements IReceptorExterno {
       + " s para que se conecten los clientes...");
   }
 
-  private void crearPartida(List<String> jugadores, boolean completarConOponentes) {
+  private void crearPartida(List<String> jugadores) {
     detenerEspera();
-    List<String> nombres = new ArrayList<>(jugadores);
-    if (completarConOponentes) {
-      for (int i = 1; nombres.size() < JUGADORES_MINIMOS; i++) {
-        String nombre = "Oponente " + i;
-        if (!contieneNombre(nombres, nombre)) {
-          nombres.add(nombre);
-        }
-      }
-    }
-    partida = Partida.crear(nombres, TipoVictoria.TABLA_LLENA, aleatorio);
+    partida = Partida.crear(jugadores, PATRON_VICTORIA, aleatorio);
     partida.iniciar();
-    patronActual = PATRON_POR_DEFECTO;
     detenerTemporizador();
     publicar(new EventoEstadoSincronizado(estadoJuego()));
     cantarSiguiente();
@@ -331,29 +325,8 @@ public class Dominio implements IReceptorExterno {
       finalizarPartida();
       return;
     }
-    Carta carta = partida.cantarSiguiente();
-    marcarOponentes(carta);
+    partida.cantarSiguiente();
     publicar(new EventoCartaCantada(estadoJuego()));
-    if (!partida.puedeCantar()) {
-      finalizarPartida();
-    }
-  }
-
-  private void marcarOponentes(Carta carta) {
-    for (Jugador jugador : partida.obtenerJugadores()) {
-      if (contieneNombre(humanos, jugador.obtenerNombre())) {
-        continue;
-      }
-      if (!jugador.obtenerTablero().contiene(carta)) {
-        continue;
-      }
-      try {
-        partida.marcar(jugador.obtenerId(), carta);
-      } catch (RuntimeException e) {
-        System.err.println("No se pudo marcar al oponente " + jugador.obtenerNombre()
-          + ": " + e.getMessage());
-      }
-    }
   }
 
   private void marcar(String nombreJugador, int cartaId) {
@@ -389,7 +362,12 @@ public class Dominio implements IReceptorExterno {
       return;
     }
     try {
-      patronActual = convertirTipoVictoria(patron).name();
+      TipoVictoria tipo = convertirTipoVictoria(patron);
+      if (!partida.declararPatron(jugador.obtenerId(), tipo)) {
+        publicar(new EventoError("El patrón " + tipo.obtenerDescripcion()
+          + " no está completo o ya fue declarado"));
+        return;
+      }
       publicar(new EventoEstadoSincronizado(estadoJuego()));
     } catch (RuntimeException e) {
       publicarError(e);
@@ -408,7 +386,8 @@ public class Dominio implements IReceptorExterno {
     }
     try {
       if (!partida.gritarLoteria(jugador.obtenerId())) {
-        publicar(new EventoError("El tablero todavía no está lleno"));
+        publicar(new EventoError("Todavía no completas el patrón "
+          + partida.obtenerTipoVictoria().obtenerDescripcion()));
         publicar(new EventoEstadoSincronizado(estadoJuego()));
         return;
       }
@@ -420,25 +399,26 @@ public class Dominio implements IReceptorExterno {
   }
 
   private void finalizarPartida() {
+    if (partida == null || partida.estaFinalizada()) {
+      return;
+    }
     detenerTemporizador();
-    if (partida != null && partida.estaEnCurso()) {
-      if (!partida.puedeCantar()) {
-        partida.cerrarPorBarajaAgotada();
-      } else {
-        partida.finalizar();
-      }
+    if (!partida.puedeCantar()) {
+      partida.cerrarPorBarajaAgotada();
+    } else {
+      partida.finalizar();
     }
     publicar(new EventoPartidaFinalizada(estadoJuego()));
   }
 
   private TipoVictoria convertirTipoVictoria(String patron) {
     if (patron == null || patron.isBlank()) {
-      return TipoVictoria.CHORRO;
+      throw new IllegalArgumentException("El patrón no puede estar vacío");
     }
     try {
       return TipoVictoria.valueOf(patron.trim().toUpperCase(Locale.ROOT));
     } catch (IllegalArgumentException e) {
-      return TipoVictoria.CHORRO;
+      throw new IllegalArgumentException("El patrón no es válido: " + patron, e);
     }
   }
 
@@ -481,7 +461,7 @@ public class Dominio implements IReceptorExterno {
 
   private EstadoJuego estadoJuego() {
     if (partida == null) {
-      return new EstadoJuego("", "", patronActual, List.of(),
+      return new EstadoJuego("", "", PATRON_VICTORIA.name(), List.of(),
         List.of(), 0, "");
     }
     List<JugadorMensaje> jugadores = new ArrayList<>();
@@ -498,10 +478,10 @@ public class Dominio implements IReceptorExterno {
     return new EstadoJuego(
       partida.obtenerId(),
       partida.obtenerEstado().name(),
-      patronActual,
+      partida.obtenerTipoVictoria().name(),
       jugadores,
       cantadas,
-      partida.obtenerCartasRestantes().size(),
+      partida.obtenerRestantes(),
       ganador
     );
   }
