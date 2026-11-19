@@ -197,6 +197,10 @@ public class Dominio implements IReceptorExterno {
       publicarErrorSeguro(e);
       return;
     }
+    if (contenido == null) {
+      publicarErrorSeguro(new IllegalArgumentException("Mensaje vacío"));
+      return;
+    }
     synchronized (candado) {
       if (!activo) {
         return;
