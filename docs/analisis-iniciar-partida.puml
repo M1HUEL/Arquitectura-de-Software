@@ -97,25 +97,23 @@ Mazo "0..54" o-- CartaLoteria
 @startuml
 title Secuencia - Iniciar partida
 
-actor "Jugador 1..4" as J
-participant "PantallaSala\n<<boundary>>" as Vista
-participant "CanalConexion\n<<boundary>>" as Canal
+actor "Jugador" as J
+participant "PantallaSeleccionarTarjeta\n<<boundary>>" as Vista
 participant "ControladorIniciarPartida\n<<control>>" as Control
 participant "Partida\n<<entity>>" as Partida
 participant "Jugador\n<<entity>>" as JugadorE
 participant "Mazo\n<<entity>>" as Mazo
+participant "Tarjeta (tablero)\n<<entity>>" as Tarjeta
 participant "Temporizador\n<<boundary>>" as Timer
 
 create Partida
 Control -> Partida: crear()
 
-loop hasta que se conectan 4 jugadores
+loop por cada jugador que se conecta
   J -> Vista: conectar(nombre)
-  Vista -> Canal: registrarConexion(nombre)
-  Canal -> Control: jugadorConectado(nombre)
+  Vista -> Control: registrarJugador(nombre)
   Control -> JugadorE: crear(nombre)
   Control -> Partida: agregarJugador(jugador)
-  Control -> Vista: mostrarJugadores()
 end
 
 alt todos los jugadores aceptan la solicitud de inicio
@@ -126,22 +124,21 @@ alt todos los jugadores aceptan la solicitud de inicio
   end
   Control -> Control: todosAceptaron() == true
 else se conectan 4 jugadores
-  Canal -> Control: jugadorConectado(jugador4)
   Control -> Control: hayCuatroJugadores() == true
 end
 
 Control -> Vista: solicitarSeleccionDeTarjeta()
 
 loop por cada jugador
-  Vista -> J: eligeTuTarjetaLoteria()
-  J -> Vista: tarjetaSeleccionada(carton)
-  Vista -> Control: registrarTarjeta(jugador, carton)
-  Control -> JugadorE: elegirTarjeta(carton)
+  Vista -> J: eligeTuTarjeta()
+  J -> Vista: tableroSeleccionado(tablero)
+  Vista -> Control: registrarTarjeta(jugador, tablero)
+  Control -> Tarjeta: crear(tablero)
+  Control -> JugadorE: asignarTarjeta(tarjeta)
 end
 
 Control -> Partida: asignarTarjetas()
 Control -> Mazo: barajar()
-
 Control -> Timer: iniciar(intervaloMs)
 Control -> Partida: iniciar()
 Partida -> Partida: estado = EN_CURSO
