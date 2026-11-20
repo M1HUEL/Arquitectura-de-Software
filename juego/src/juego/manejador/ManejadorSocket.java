@@ -62,13 +62,13 @@ public class ManejadorSocket implements IReceptorExterno {
     } else if (contenido instanceof EventoCartaCantada evento) {
       modelo.cantarCarta(evento.cartaId(), evento.restantes());
     } else if (contenido instanceof EventoCasillaMarcada evento) {
-      modelo.marcarCasilla(evento.jugador(), evento.cartaId(), evento.puntos());
-    } else if (contenido instanceof EventoPatronDeclarado evento) {
-      modelo.declararPatron(evento.jugador(), evento.patron(), evento.puntos());
+      modelo.marcarCasilla(evento.jugador(), evento.cartaId());
+    } else if (contenido instanceof EventoPatronDeclarado) {
+      modelo.declararPatron();
     } else if (contenido instanceof EventoPuntajeActualizado evento) {
       modelo.actualizarPuntaje(evento.jugador(), evento.puntos());
     } else if (contenido instanceof EventoPartidaGanada evento) {
-      modelo.ganarPartida(evento.jugador(), evento.puntos());
+      modelo.ganarPartida(evento.jugador());
     } else if (contenido instanceof EventoPartidaFinalizada) {
       modelo.finalizarPartida();
     }

@@ -65,7 +65,7 @@ public class ModeloJuego implements Modelo {
     notificarObservadores();
   }
 
-  public void marcarCasilla(String nombreJugador, int cartaId, int puntos) {
+  public void marcarCasilla(String nombreJugador, int cartaId) {
     Jugador jugador = buscarJugador(nombreJugador);
     if (jugador != null) {
       Carta carta = Carta.desdeId(cartaId);
@@ -75,13 +75,12 @@ public class ModeloJuego implements Modelo {
           break;
         }
       }
-      jugador.establecerPuntaje(puntos);
     }
     notificarObservadores();
   }
 
-  public void declararPatron(String nombreJugador, String patron, int puntos) {
-    actualizarPuntaje(nombreJugador, puntos);
+  public void declararPatron() {
+    notificarObservadores();
   }
 
   public void actualizarPuntaje(String nombreJugador, int puntos) {
@@ -92,11 +91,7 @@ public class ModeloJuego implements Modelo {
     notificarObservadores();
   }
 
-  public void ganarPartida(String nombreJugador, int puntos) {
-    Jugador jugador = buscarJugador(nombreJugador);
-    if (jugador != null) {
-      jugador.establecerPuntaje(puntos);
-    }
+  public void ganarPartida(String nombreJugador) {
     this.ganador = nombreJugador == null ? "" : nombreJugador.trim();
     this.estadoPartida = EstadoPartida.TERMINADA;
     notificarObservadores();

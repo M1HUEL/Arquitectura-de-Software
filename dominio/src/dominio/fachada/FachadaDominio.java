@@ -340,8 +340,9 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
         publicar(new EventoError("La casilla ya estaba marcada"));
         return;
       }
-      publicar(new EventoCasillaMarcada(
-        jugador.obtenerNombre(), carta.obtenerId(), jugador.obtenerPuntos()));
+      publicar(new EventoCasillaMarcada(jugador.obtenerNombre(), carta.obtenerId()));
+      publicar(new EventoPuntajeActualizado(
+        jugador.obtenerNombre(), jugador.obtenerPuntos()));
     } catch (RuntimeException e) {
       publicarErrorSeguro(e);
     }
@@ -364,8 +365,9 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
           + " no está completo o ya fue declarado"));
         return;
       }
-      publicar(new EventoPatronDeclarado(
-        jugador.obtenerNombre(), tipo.name(), jugador.obtenerPuntos()));
+      publicar(new EventoPatronDeclarado(jugador.obtenerNombre(), tipo.name()));
+      publicar(new EventoPuntajeActualizado(
+        jugador.obtenerNombre(), jugador.obtenerPuntos()));
     } catch (RuntimeException e) {
       publicarErrorSeguro(e);
     }
@@ -390,8 +392,9 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
         return;
       }
       griton.detener();
-      publicar(new EventoPartidaGanada(
+      publicar(new EventoPuntajeActualizado(
         jugador.obtenerNombre(), jugador.obtenerPuntos()));
+      publicar(new EventoPartidaGanada(jugador.obtenerNombre()));
     } catch (RuntimeException e) {
       publicarErrorSeguro(e);
     }
