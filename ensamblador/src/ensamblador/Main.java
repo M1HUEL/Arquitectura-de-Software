@@ -17,6 +17,7 @@ import juego.fachada.FachadaBroker;
 import juego.manejador.ManejadorSocket;
 import juego.modelo.ModeloJuego;
 import juego.vista.VistaJuego;
+import comun.evento.Tema;
 import comun.serializador.Serializador;
 
 public class Main {
@@ -28,8 +29,6 @@ public class Main {
   private static final int PUERTO_CLIENTE = 7002;
   private static final int SEGUNDOS_ESPERA = 30;
   private static final long INTERVALO_CARTAS = 3000L;
-  private static final String TEMA_COMANDOS = "dominio";
-  private static final String TEMA_EVENTOS = "juego";
 
   public static void main(String[] args) {
     if (args.length == 0) {
@@ -55,17 +54,17 @@ public class Main {
     Broker broker = new Broker(new Serializador(PATRON_FILTRO), dispatcher);
     Receptor receptor = new Receptor(broker);
     try {
-      broker.suscribir(TEMA_COMANDOS, HOST, puertoDominio);
+      broker.suscribir(Tema.DOMINIO, HOST, puertoDominio);
       if (args.length > 3) {
         for (int i = 3; i < args.length; i++) {
           int puertoCliente = entero(args, i, -1);
           if (puertoCliente > 0) {
-            broker.suscribir(TEMA_EVENTOS, HOST, puertoCliente);
+            broker.suscribir(Tema.JUEGO, HOST, puertoCliente);
           }
         }
       } else {
-        broker.suscribir(TEMA_EVENTOS, HOST, PUERTO_CLIENTE);
-        broker.suscribir(TEMA_EVENTOS, HOST, PUERTO_CLIENTE + 1);
+        broker.suscribir(Tema.JUEGO, HOST, PUERTO_CLIENTE);
+        broker.suscribir(Tema.JUEGO, HOST, PUERTO_CLIENTE + 1);
       }
       dispatcher.iniciar();
       iniciarReceptor(receptor, puertoBroker);
@@ -92,8 +91,6 @@ public class Main {
       dispatcher,
       HOST,
       puertoBroker,
-      TEMA_COMANDOS,
-      TEMA_EVENTOS,
       List.of(),
       intervalo,
       new Random().nextLong(),
@@ -137,7 +134,7 @@ public class Main {
     SwingUtilities.invokeLater(() -> {
       Dispatcher dispatcher = DispatcherFactory.crear();
       FachadaBroker fachada = new FachadaBroker(
-        nombre, hostBroker, puertoBroker, TEMA_COMANDOS, serializador, dispatcher);
+        nombre, hostBroker, puertoBroker, serializador, dispatcher);
       ModeloJuego modelo = new ModeloJuego(nombre, fachada);
       ManejadorSocket manejador = new ManejadorSocket(serializador, modelo);
       Receptor receptor = new Receptor(manejador);

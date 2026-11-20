@@ -5,18 +5,19 @@ import comun.evento.EventoIniciarPartida;
 import comun.evento.EventoMarcarCasilla;
 import comun.evento.EventoSeleccionarPatron;
 import comun.evento.EventoGritarLoteria;
-import comun.EventoBroker;
+import comun.evento.Evento;
+import comun.evento.Tema;
 import comunicacion.api.IDispatcher;
 import juego.modelo.Carta;
 import juego.modelo.Patron;
 import comun.serializador.ISerializador;
+import java.io.Serializable;
 
 public class FachadaBroker implements Fachada {
 
   private final String jugadorLocal;
   private final String hostBroker;
   private final int puertoBroker;
-  private final String temaEventosCliente;
   private final ISerializador serializador;
   private final IDispatcher dispatcher;
 
@@ -24,7 +25,6 @@ public class FachadaBroker implements Fachada {
     String jugadorLocal,
     String hostBroker,
     int puertoBroker,
-    String temaEventosCliente,
     ISerializador serializador,
     IDispatcher dispatcher
   ) {
@@ -37,9 +37,6 @@ public class FachadaBroker implements Fachada {
     if (puertoBroker < 0 || puertoBroker > 65535) {
       throw new IllegalArgumentException("El puerto del broker no es válido: " + puertoBroker);
     }
-    if (temaEventosCliente == null || temaEventosCliente.isBlank()) {
-      throw new IllegalArgumentException("El tema de eventos del cliente no puede estar vacío");
-    }
     if (serializador == null) {
       throw new IllegalArgumentException("El serializador no puede ser nulo");
     }
@@ -49,7 +46,6 @@ public class FachadaBroker implements Fachada {
     this.jugadorLocal = jugadorLocal.trim();
     this.hostBroker = hostBroker.trim();
     this.puertoBroker = puertoBroker;
-    this.temaEventosCliente = temaEventosCliente.trim();
     this.serializador = serializador;
     this.dispatcher = dispatcher;
   }
@@ -85,8 +81,8 @@ public class FachadaBroker implements Fachada {
     }
   }
 
-  private void enviar(Object evento) {
-    byte[] datos = serializador.serializar(new EventoBroker(temaEventosCliente, evento));
+  private void enviar(Serializable evento) {
+    byte[] datos = serializador.serializar(new Evento(Tema.DOMINIO, evento));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
   }
 }

@@ -2,7 +2,8 @@ package juego.manejador;
 
 import comun.CartaMensaje;
 import comun.EstadoJuego;
-import comun.EventoBroker;
+import comun.evento.Evento;
+import comun.evento.Tema;
 import comun.evento.EventoCartaCantada;
 import comun.evento.EventoError;
 import comun.evento.EventoPartidaFinalizada;
@@ -48,11 +49,15 @@ public class ManejadorSocket implements IReceptorExterno {
         "No se pudo interpretar un mensaje del servidor: " + e.getMessage());
       return;
     }
-    if (!(sobre instanceof EventoBroker evento)) {
+    if (!(sobre instanceof Evento evento)) {
       modelo.registrarError("El servidor envió un mensaje inesperado");
       return;
     }
-    Object contenido = evento.contenido();
+    if (evento.tema() != Tema.JUEGO) {
+      modelo.registrarError("El servidor envió un tema inesperado");
+      return;
+    }
+    Object contenido = evento.payload();
     SwingUtilities.invokeLater(() -> procesar(contenido));
   }
 

@@ -1,37 +1,35 @@
 package broker;
 
+import comun.evento.Tema;
 import java.util.Objects;
 
 public class Suscriptor {
 
-  private final String tema;
+  private final Tema tema;
   private final String host;
   private final int puerto;
 
-  public Suscriptor(String tema, String host, int puerto) {
-    if (tema == null || tema.isBlank()) {
-      throw new IllegalArgumentException("El tema no puede estar vacío");
-    }
+  public Suscriptor(Tema tema, String host, int puerto) {
+    this.tema = Objects.requireNonNull(tema, "El tema no puede ser nulo");
     if (host == null || host.isBlank()) {
       throw new IllegalArgumentException("El host no puede estar vacío");
     }
     if (puerto <= 0 || puerto > 65535) {
       throw new IllegalArgumentException("El puerto no es válido: " + puerto);
     }
-    this.tema = tema;
     this.host = host;
     this.puerto = puerto;
   }
 
-  public String getTema() {
+  public Tema obtenerTema() {
     return tema;
   }
 
-  public String getHost() {
+  public String obtenerHost() {
     return host;
   }
 
-  public int getPuerto() {
+  public int obtenerPuerto() {
     return puerto;
   }
 
@@ -44,7 +42,7 @@ public class Suscriptor {
       return false;
     }
     return puerto == otro.puerto
-      && tema.equals(otro.tema)
+      && tema == otro.tema
       && host.equals(otro.host);
   }
 

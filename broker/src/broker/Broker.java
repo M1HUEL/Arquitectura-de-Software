@@ -1,10 +1,11 @@
 package broker;
 
-import comun.EventoBroker;
+import comun.evento.Evento;
+import comun.evento.Tema;
 import comunicacion.api.IDispatcher;
 import comunicacion.api.IReceptorExterno;
-import java.util.List;
 import comun.serializador.ISerializador;
+import java.util.List;
 
 public class Broker implements IReceptorExterno {
 
@@ -24,28 +25,28 @@ public class Broker implements IReceptorExterno {
     this.gestor = new GestorSuscriptores();
   }
 
-  public void suscribir(String tema, String host, int puerto) {
+  public void suscribir(Tema tema, String host, int puerto) {
     gestor.agregar(tema, host, puerto);
   }
 
-  public void desuscribir(String tema, String host, int puerto) {
+  public void desuscribir(Tema tema, String host, int puerto) {
     gestor.eliminar(tema, host, puerto);
   }
 
-  public void publicar(String tema, byte[] evento) {
+  public void publicar(Tema tema, byte[] evento) {
     List<Suscriptor> suscriptores = gestor.obtener(tema);
     if (suscriptores.isEmpty()) {
       return;
     }
     for (Suscriptor suscriptor : suscriptores) {
-      dispatcher.enviar(suscriptor.getHost(), suscriptor.getPuerto(), evento);
+      dispatcher.enviar(suscriptor.obtenerHost(), suscriptor.obtenerPuerto(), evento);
     }
   }
 
   @Override
   public void alRecibir(byte[] evento) {
     Object sobre = serializador.deserializar(evento, Object.class);
-    if (sobre instanceof EventoBroker mensaje) {
+    if (sobre instanceof Evento mensaje) {
       publicar(mensaje.tema(), evento);
     }
   }

@@ -7,7 +7,8 @@ import comun.evento.EventoMarcarCasilla;
 import comun.evento.EventoSeleccionarPatron;
 import comun.evento.EventoGritarLoteria;
 import comun.EstadoJuego;
-import comun.EventoBroker;
+import comun.evento.Evento;
+import comun.evento.Tema;
 import comun.evento.EventoCartaCantada;
 import comun.evento.EventoError;
 import comun.evento.EventoPartidaFinalizada;
@@ -22,6 +23,7 @@ import dominio.modelo.CatalogoCartas;
 import dominio.modelo.Jugador;
 import dominio.modelo.Partida;
 import dominio.modelo.TipoVictoria;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -41,8 +43,6 @@ public class Dominio implements IReceptorExterno {
   private final IDispatcher dispatcher;
   private final String hostBroker;
   private final int puertoBroker;
-  private final String temaEventosCliente;
-  private final String temaEventosDominio;
   private final long intervaloMs;
   /* Compartido por tableros y baraja: el orden de creación fija la secuencia.
      Todo su uso ocurre bajo candado. */
@@ -61,13 +61,10 @@ public class Dominio implements IReceptorExterno {
     IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
-    String temaEventosCliente,
-    String temaEventosDominio,
     String jugadorLocal,
     long intervaloMs
   ) {
-    this(serializador, dispatcher, hostBroker, puertoBroker, temaEventosCliente,
-      temaEventosDominio, List.of(jugadorLocal), intervaloMs);
+    this(serializador, dispatcher, hostBroker, puertoBroker, List.of(jugadorLocal), intervaloMs);
   }
 
   public Dominio(
@@ -75,14 +72,11 @@ public class Dominio implements IReceptorExterno {
     IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
-    String temaEventosCliente,
-    String temaEventosDominio,
     String jugadorLocal,
     long intervaloMs,
     long semilla
   ) {
-    this(serializador, dispatcher, hostBroker, puertoBroker, temaEventosCliente,
-      temaEventosDominio, List.of(jugadorLocal), intervaloMs, semilla);
+    this(serializador, dispatcher, hostBroker, puertoBroker, List.of(jugadorLocal), intervaloMs, semilla);
   }
 
   public Dominio(
@@ -90,13 +84,11 @@ public class Dominio implements IReceptorExterno {
     IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
-    String temaEventosCliente,
-    String temaEventosDominio,
     List<String> jugadoresHumanos,
     long intervaloMs
   ) {
-    this(serializador, dispatcher, hostBroker, puertoBroker, temaEventosCliente,
-      temaEventosDominio, jugadoresHumanos, intervaloMs, new Random().nextLong());
+    this(serializador, dispatcher, hostBroker, puertoBroker, jugadoresHumanos,
+      intervaloMs, new Random().nextLong());
   }
 
   public Dominio(
@@ -104,14 +96,11 @@ public class Dominio implements IReceptorExterno {
     IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
-    String temaEventosCliente,
-    String temaEventosDominio,
     List<String> jugadoresHumanos,
     long intervaloMs,
     long semilla
   ) {
-    this(serializador, dispatcher, hostBroker, puertoBroker, temaEventosCliente,
-      temaEventosDominio, jugadoresHumanos, intervaloMs, semilla, 0L);
+    this(serializador, dispatcher, hostBroker, puertoBroker, jugadoresHumanos, intervaloMs, semilla, 0L);
   }
 
   public Dominio(
@@ -119,8 +108,6 @@ public class Dominio implements IReceptorExterno {
     IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
-    String temaEventosCliente,
-    String temaEventosDominio,
     List<String> jugadoresHumanos,
     long intervaloMs,
     long semilla,
@@ -137,12 +124,6 @@ public class Dominio implements IReceptorExterno {
     }
     if (puertoBroker < 0 || puertoBroker > 65535) {
       throw new IllegalArgumentException("El puerto del broker no es válido: " + puertoBroker);
-    }
-    if (temaEventosCliente == null || temaEventosCliente.isBlank()) {
-      throw new IllegalArgumentException("El tema de eventos del cliente no puede estar vacío");
-    }
-    if (temaEventosDominio == null || temaEventosDominio.isBlank()) {
-      throw new IllegalArgumentException("El tema de eventos del dominio no puede estar vacío");
     }
     if (jugadoresHumanos == null) {
       throw new IllegalArgumentException("La lista de jugadores no puede ser nula");
@@ -163,8 +144,6 @@ public class Dominio implements IReceptorExterno {
     this.dispatcher = dispatcher;
     this.hostBroker = hostBroker.trim();
     this.puertoBroker = puertoBroker;
-    this.temaEventosCliente = temaEventosCliente.trim();
-    this.temaEventosDominio = temaEventosDominio.trim();
     this.intervaloMs = intervaloMs > 0 ? intervaloMs : INTERVALO_POR_DEFECTO;
     this.aleatorio = new Random(semilla);
     this.esperaMs = Math.max(0L, esperaMs);
@@ -201,12 +180,12 @@ public class Dominio implements IReceptorExterno {
       publicarErrorSeguro(e);
       return;
     }
-    if (!(sobre instanceof EventoBroker evento)) {
+    if (!(sobre instanceof Evento evento)) {
       publicarErrorSeguro(new IllegalArgumentException("Mensaje inesperado del broker"));
       return;
     }
-    Object contenido = evento.contenido();
-    if (!temaEventosCliente.equals(evento.tema())) {
+    Object contenido = evento.payload();
+    if (evento.tema() != Tema.DOMINIO) {
       publicarErrorSeguro(new IllegalArgumentException("Tema inesperado del broker"));
       return;
     }
@@ -242,14 +221,6 @@ public class Dominio implements IReceptorExterno {
 
   public boolean estaActivo() {
     return activo;
-  }
-
-  public String obtenerTemaEventosCliente() {
-    return temaEventosCliente;
-  }
-
-  public String obtenerTemaEventosDominio() {
-    return temaEventosDominio;
   }
 
   private void iniciarPartida(String jugador) {
@@ -495,8 +466,8 @@ public class Dominio implements IReceptorExterno {
     }
   }
 
-  private void publicar(Object evento) {
-    byte[] datos = serializador.serializar(new EventoBroker(temaEventosDominio, evento));
+  private void publicar(Serializable evento) {
+    byte[] datos = serializador.serializar(new Evento(Tema.JUEGO, evento));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
   }
 
