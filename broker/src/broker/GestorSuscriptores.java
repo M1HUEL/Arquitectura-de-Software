@@ -7,9 +7,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GestorSuscriptores {
 
-  public record Suscriptor(String host, int puerto) {
+  public record Suscriptor(String tema, String host, int puerto) {
 
     public Suscriptor {
+      validarTema(tema);
       if (host == null || host.isBlank()) {
         throw new IllegalArgumentException("El host no puede estar vacío");
       }
@@ -25,13 +26,13 @@ public class GestorSuscriptores {
     validarTema(tema);
     CopyOnWriteArrayList<Suscriptor> lista = suscriptores.computeIfAbsent(
       tema, clave -> new CopyOnWriteArrayList<>());
-    lista.addIfAbsent(new Suscriptor(host, puerto));
+    lista.addIfAbsent(new Suscriptor(tema, host, puerto));
   }
 
   public void eliminar(String tema, String host, int puerto) {
     validarTema(tema);
     suscriptores.computeIfPresent(tema, (clave, lista) -> {
-      lista.remove(new Suscriptor(host, puerto));
+      lista.remove(new Suscriptor(tema, host, puerto));
       return lista.isEmpty() ? null : lista;
     });
   }
@@ -42,7 +43,7 @@ public class GestorSuscriptores {
     return lista == null ? List.of() : List.copyOf(lista);
   }
 
-  private void validarTema(String tema) {
+  private static void validarTema(String tema) {
     if (tema == null || tema.isBlank()) {
       throw new IllegalArgumentException("El tema no puede estar vacío");
     }
