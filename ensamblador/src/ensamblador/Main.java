@@ -17,7 +17,7 @@ import juego.fachada.FachadaBroker;
 import juego.manejador.ManejadorSocket;
 import juego.modelo.ModeloJuego;
 import juego.vista.VistaJuego;
-import serializador.Serializador;
+import comun.serializador.Serializador;
 
 public class Main {
 

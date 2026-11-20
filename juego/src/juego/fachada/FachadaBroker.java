@@ -9,7 +9,7 @@ import comun.EventoBroker;
 import comunicacion.api.IDispatcher;
 import juego.modelo.Carta;
 import juego.modelo.Patron;
-import serializador.ISerializador;
+import comun.serializador.ISerializador;
 
 public class FachadaBroker implements Fachada {
 

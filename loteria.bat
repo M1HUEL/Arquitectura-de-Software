@@ -7,7 +7,7 @@ rem   loteria.bat dominio [puertoDominio] [puertoBroker] [segundosEspera] [inter
 rem   loteria.bat cliente <nombre> <puertoCliente> [puertoBroker] [hostBroker]
 
 set "BASE=%~dp0"
-set "CP=%BASE%ensamblador\ensamblador.jar;%BASE%ensamblador\comunicacion-api.jar;%BASE%ensamblador\comunicacion.jar;%BASE%ensamblador\serializador.jar;%BASE%ensamblador\comun.jar;%BASE%ensamblador\broker.jar;%BASE%ensamblador\dominio.jar;%BASE%ensamblador\juego.jar"
+set "CP=%BASE%ensamblador\ensamblador.jar;%BASE%ensamblador\comunicacion-api.jar;%BASE%ensamblador\comunicacion.jar;%BASE%ensamblador\comun.jar;%BASE%ensamblador\broker.jar;%BASE%ensamblador\dominio.jar;%BASE%ensamblador\juego.jar"
 
 if defined JAVA_HOME (
   set "JAVA=%JAVA_HOME%\bin\java.exe"

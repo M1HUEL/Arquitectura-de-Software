@@ -4,7 +4,7 @@ import comun.EventoBroker;
 import comunicacion.api.IDispatcher;
 import comunicacion.api.IReceptorExterno;
 import java.util.List;
-import serializador.ISerializador;
+import comun.serializador.ISerializador;
 
 public class Broker implements IReceptorExterno {
 

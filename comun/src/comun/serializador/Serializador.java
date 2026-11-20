@@ -1,4 +1,4 @@
-package serializador;
+package comun.serializador;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

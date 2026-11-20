@@ -20,7 +20,7 @@ import juego.modelo.EstadoPartida;
 import juego.modelo.Jugador;
 import juego.modelo.ModeloJuego;
 import javax.swing.SwingUtilities;
-import serializador.ISerializador;
+import comun.serializador.ISerializador;
 
 public class ManejadorSocket implements IReceptorExterno {
 

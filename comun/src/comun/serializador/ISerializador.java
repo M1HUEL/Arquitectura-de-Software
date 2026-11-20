@@ -1,4 +1,4 @@
-package serializador;
+package comun.serializador;
 
 public interface ISerializador {
 
