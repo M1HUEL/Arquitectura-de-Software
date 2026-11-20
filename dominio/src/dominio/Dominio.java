@@ -194,15 +194,20 @@ public class Dominio implements IReceptorExterno {
 
   @Override
   public void alRecibir(byte[] datos) {
-    Object contenido;
+    Object sobre;
     try {
-      contenido = serializador.deserializar(datos, Object.class);
+      sobre = serializador.deserializar(datos, Object.class);
     } catch (RuntimeException e) {
       publicarErrorSeguro(e);
       return;
     }
-    if (contenido == null) {
-      publicarErrorSeguro(new IllegalArgumentException("Mensaje vacío"));
+    if (!(sobre instanceof EventoBroker evento)) {
+      publicarErrorSeguro(new IllegalArgumentException("Mensaje inesperado del broker"));
+      return;
+    }
+    Object contenido = evento.contenido();
+    if (!temaEventosCliente.equals(evento.tema())) {
+      publicarErrorSeguro(new IllegalArgumentException("Tema inesperado del broker"));
       return;
     }
     synchronized (candado) {

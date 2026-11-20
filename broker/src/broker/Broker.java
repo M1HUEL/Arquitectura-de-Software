@@ -32,22 +32,21 @@ public class Broker implements IReceptorExterno {
     gestor.eliminar(tema, host, puerto);
   }
 
-  public void publicar(String tema, Object contenido) {
+  public void publicar(String tema, byte[] evento) {
     List<GestorSuscriptores.Suscriptor> suscriptores = gestor.obtener(tema);
     if (suscriptores.isEmpty()) {
       return;
     }
-    byte[] datos = serializador.serializar(contenido);
     for (GestorSuscriptores.Suscriptor suscriptor : suscriptores) {
-      dispatcher.enviar(suscriptor.host(), suscriptor.puerto(), datos);
+      dispatcher.enviar(suscriptor.host(), suscriptor.puerto(), evento);
     }
   }
 
   @Override
-  public void alRecibir(byte[] datos) {
-    Object objeto = serializador.deserializar(datos, Object.class);
-    if (objeto instanceof EventoBroker evento) {
-      publicar(evento.tema(), evento.contenido());
+  public void alRecibir(byte[] evento) {
+    Object sobre = serializador.deserializar(evento, Object.class);
+    if (sobre instanceof EventoBroker mensaje) {
+      publicar(mensaje.tema(), evento);
     }
   }
 

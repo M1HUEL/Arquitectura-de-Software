@@ -2,6 +2,7 @@ package juego.manejador;
 
 import comun.CartaMensaje;
 import comun.EstadoJuego;
+import comun.EventoBroker;
 import comun.evento.EventoCartaCantada;
 import comun.evento.EventoError;
 import comun.evento.EventoPartidaFinalizada;
@@ -39,14 +40,19 @@ public class ManejadorSocket implements IReceptorExterno {
 
   @Override
   public void alRecibir(byte[] datos) {
-    Object contenido;
+    Object sobre;
     try {
-      contenido = serializador.deserializar(datos, Object.class);
+      sobre = serializador.deserializar(datos, Object.class);
     } catch (RuntimeException e) {
       modelo.registrarError(
         "No se pudo interpretar un mensaje del servidor: " + e.getMessage());
       return;
     }
+    if (!(sobre instanceof EventoBroker evento)) {
+      modelo.registrarError("El servidor envió un mensaje inesperado");
+      return;
+    }
+    Object contenido = evento.contenido();
     SwingUtilities.invokeLater(() -> procesar(contenido));
   }
 
