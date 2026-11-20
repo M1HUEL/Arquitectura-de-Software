@@ -4,7 +4,7 @@ import broker.Broker;
 import comunicacion.Dispatcher;
 import comunicacion.DispatcherFactory;
 import comunicacion.Receptor;
-import dominio.Dominio;
+import dominio.fachada.FachadaDominio;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
@@ -100,7 +100,7 @@ public class Main {
     long intervalo = largo(args, 4, INTERVALO_CARTAS);
     Serializador serializador = new Serializador(PATRON_FILTRO);
     Dispatcher dispatcher = DispatcherFactory.crear();
-    Dominio dominio = new Dominio(
+    FachadaDominio dominio = new FachadaDominio(
       serializador,
       dispatcher,
       HOST,

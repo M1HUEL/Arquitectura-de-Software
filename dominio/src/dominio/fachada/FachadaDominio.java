@@ -1,4 +1,4 @@
-package dominio;
+package dominio.fachada;
 
 import comun.CartaMensaje;
 import comun.evento.EventoCerrarPartida;
@@ -17,6 +17,7 @@ import comun.evento.EventoPartidaGanada;
 import comun.JugadorMensaje;
 import comunicacion.api.IDispatcher;
 import comunicacion.api.IReceptorExterno;
+import dominio.griton.Griton;
 import dominio.modelo.Carta;
 import dominio.modelo.Casilla;
 import dominio.modelo.CatalogoCartas;
@@ -34,7 +35,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import comun.serializador.ISerializador;
 
-public class Dominio implements IReceptorExterno {
+public class FachadaDominio implements Fachada, IReceptorExterno {
 
   private static final long INTERVALO_POR_DEFECTO = 3000L;
   private static final TipoVictoria PATRON_VICTORIA = TipoVictoria.TABLA_LLENA;
@@ -52,11 +53,12 @@ public class Dominio implements IReceptorExterno {
   private final Object candado = new Object();
 
   private Partida partida;
+  private final Griton griton;
   private ScheduledExecutorService temporizadorEspera;
   private ScheduledFuture<?> tareaEspera;
   private volatile boolean activo;
 
-  public Dominio(
+  public FachadaDominio(
     ISerializador serializador,
     IDispatcher dispatcher,
     String hostBroker,
@@ -67,7 +69,7 @@ public class Dominio implements IReceptorExterno {
     this(serializador, dispatcher, hostBroker, puertoBroker, List.of(jugadorLocal), intervaloMs);
   }
 
-  public Dominio(
+  public FachadaDominio(
     ISerializador serializador,
     IDispatcher dispatcher,
     String hostBroker,
@@ -79,7 +81,7 @@ public class Dominio implements IReceptorExterno {
     this(serializador, dispatcher, hostBroker, puertoBroker, List.of(jugadorLocal), intervaloMs, semilla);
   }
 
-  public Dominio(
+  public FachadaDominio(
     ISerializador serializador,
     IDispatcher dispatcher,
     String hostBroker,
@@ -91,7 +93,7 @@ public class Dominio implements IReceptorExterno {
       intervaloMs, new Random().nextLong());
   }
 
-  public Dominio(
+  public FachadaDominio(
     ISerializador serializador,
     IDispatcher dispatcher,
     String hostBroker,
@@ -103,7 +105,7 @@ public class Dominio implements IReceptorExterno {
     this(serializador, dispatcher, hostBroker, puertoBroker, jugadoresHumanos, intervaloMs, semilla, 0L);
   }
 
-  public Dominio(
+  public FachadaDominio(
     ISerializador serializador,
     IDispatcher dispatcher,
     String hostBroker,
@@ -147,8 +149,11 @@ public class Dominio implements IReceptorExterno {
     this.intervaloMs = intervaloMs > 0 ? intervaloMs : INTERVALO_POR_DEFECTO;
     this.aleatorio = new Random(semilla);
     this.esperaMs = Math.max(0L, esperaMs);
+    this.griton = new Griton(this, serializador, dispatcher,
+      this.hostBroker, this.puertoBroker, this.intervaloMs);
   }
 
+  @Override
   public void iniciar() {
     synchronized (candado) {
       if (activo) {
@@ -161,12 +166,11 @@ public class Dominio implements IReceptorExterno {
     }
   }
 
+  @Override
   public void detener() {
     synchronized (candado) {
       activo = false;
-      if (partida != null) {
-        partida.detenerGriton();
-      }
+      griton.detener();
       detenerEspera();
     }
   }
@@ -215,6 +219,7 @@ public class Dominio implements IReceptorExterno {
     }
   }
 
+  @Override
   public boolean estaActivo() {
     return activo;
   }
@@ -275,24 +280,10 @@ public class Dominio implements IReceptorExterno {
 
   private void crearPartida(List<String> jugadores) {
     detenerEspera();
-    partida = Partida.crear(jugadores, PATRON_VICTORIA, aleatorio,
-      intervaloMs, this::cantarDesdeGriton);
+    partida = Partida.crear(jugadores, PATRON_VICTORIA, aleatorio);
     partida.iniciar();
+    griton.iniciar();
     publicar(new EventoEstadoSincronizado(estadoJuego()));
-    cantarSiguiente();
-  }
-
-  private void cantarDesdeGriton() {
-    synchronized (candado) {
-      if (!activo) {
-        return;
-      }
-      try {
-        cantarSiguiente();
-      } catch (RuntimeException e) {
-        publicarErrorSeguro(e);
-      }
-    }
   }
 
   private ScheduledExecutorService crearPlanificador(String nombre) {
@@ -314,19 +305,19 @@ public class Dominio implements IReceptorExterno {
     }
   }
 
-  private void cantarSiguiente() {
-    if (partida == null || !partida.estaEnCurso()) {
-      if (partida != null) {
-        partida.detenerGriton();
+  @Override
+  public EstadoJuego cantarSiguienteCarta() {
+    synchronized (candado) {
+      if (!activo || partida == null || !partida.estaEnCurso()) {
+        return null;
       }
-      return;
+      if (!partida.puedeCantar()) {
+        finalizarPartida();
+        return null;
+      }
+      partida.cantarSiguiente();
+      return estadoJuego();
     }
-    if (!partida.puedeCantar()) {
-      finalizarPartida();
-      return;
-    }
-    partida.cantarSiguiente();
-    publicar(new EventoCartaCantada(estadoJuego()));
   }
 
   private void marcar(String nombreJugador, int cartaId) {
@@ -391,7 +382,7 @@ public class Dominio implements IReceptorExterno {
         publicar(new EventoEstadoSincronizado(estadoJuego()));
         return;
       }
-      partida.detenerGriton();
+      griton.detener();
       publicar(new EventoPartidaGanada(estadoJuego()));
     } catch (RuntimeException e) {
       publicarErrorSeguro(e);
@@ -402,7 +393,7 @@ public class Dominio implements IReceptorExterno {
     if (partida == null || partida.estaFinalizada()) {
       return;
     }
-    partida.detenerGriton();
+    griton.detener();
     if (partida.obtenerRestantes() == 0 && partida.estaEnCurso()) {
       partida.cerrarPorBarajaAgotada();
     } else {

@@ -1,40 +1,50 @@
 package dominio.griton;
 
-import dominio.modelo.Baraja;
-import dominio.modelo.Carta;
-import dominio.modelo.CatalogoCartas;
-import java.util.LinkedHashSet;
-import java.util.List;
+import comun.EstadoJuego;
+import comun.evento.Evento;
+import comun.evento.EventoCartaCantada;
+import comun.evento.Tema;
+import comun.serializador.ISerializador;
+import comunicacion.api.IDispatcher;
+import dominio.fachada.Fachada;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-import java.util.SequencedSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public final class Griton {
 
-  private final Baraja baraja;
+  private final Fachada fachada;
+  private final ISerializador serializador;
+  private final IDispatcher dispatcher;
+  private final String hostBroker;
+  private final int puertoBroker;
   private final long intervaloMs;
-  private final Runnable accionGritar;
-  private final SequencedSet<Carta> gritadas = new LinkedHashSet<>();
   private ScheduledExecutorService planificador;
 
-  public Griton(Baraja baraja, long intervaloMs, Runnable accionGritar) {
-    this.baraja = Objects.requireNonNull(baraja, "baraja");
+  public Griton(
+    Fachada fachada,
+    ISerializador serializador,
+    IDispatcher dispatcher,
+    String hostBroker,
+    int puertoBroker,
+    long intervaloMs
+  ) {
+    this.fachada = Objects.requireNonNull(fachada, "fachada");
+    this.serializador = Objects.requireNonNull(serializador, "serializador");
+    this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
+    if (hostBroker == null || hostBroker.isBlank()) {
+      throw new IllegalArgumentException("El host del broker no puede estar vacío");
+    }
+    if (puertoBroker < 0 || puertoBroker > 65535) {
+      throw new IllegalArgumentException("El puerto del broker no es válido: " + puertoBroker);
+    }
     if (intervaloMs <= 0) {
       throw new IllegalArgumentException("El intervalo debe ser positivo");
     }
+    this.hostBroker = hostBroker.trim();
+    this.puertoBroker = puertoBroker;
     this.intervaloMs = intervaloMs;
-    this.accionGritar = Objects.requireNonNull(accionGritar, "accionGritar");
-  }
-
-  public static Griton completo(Random aleatorio, long intervaloMs, Runnable accionGritar) {
-    Objects.requireNonNull(aleatorio, "aleatorio");
-    Baraja baraja = new Baraja(CatalogoCartas.obtenerTodas());
-    baraja.revolver(aleatorio);
-    return new Griton(baraja, intervaloMs, accionGritar);
   }
 
   public void iniciar() {
@@ -44,13 +54,7 @@ public final class Griton {
       hilo.setDaemon(true);
       return hilo;
     });
-    planificador.scheduleWithFixedDelay(() -> {
-      try {
-        accionGritar.run();
-      } catch (RuntimeException e) {
-        System.err.println("Error al gritar: " + e.getMessage());
-      }
-    }, intervaloMs, intervaloMs, TimeUnit.MILLISECONDS);
+    planificador.scheduleWithFixedDelay(this::cantar, 0, intervaloMs, TimeUnit.MILLISECONDS);
   }
 
   public void detener() {
@@ -60,40 +64,17 @@ public final class Griton {
     }
   }
 
-  public Carta gritarSiguiente() {
-    Carta carta = baraja.sacarSiguiente();
-    gritadas.add(carta);
-    return carta;
-  }
-
-  public boolean fueGritada(Carta carta) {
-    return gritadas.contains(carta);
-  }
-
-  public boolean puedeGritar() {
-    return !baraja.estaVacia();
-  }
-
-  public int obtenerTurno() {
-    return gritadas.size();
-  }
-
-  public int obtenerRestantes() {
-    return baraja.obtenerRestantes();
-  }
-
-  public List<Carta> obtenerCartasGritadas() {
-    return List.copyOf(gritadas);
-  }
-
-  public List<Carta> obtenerCartasRestantes() {
-    return baraja.obtenerCartasRestantes();
-  }
-
-  public Optional<Carta> obtenerUltimaCarta() {
-    if (gritadas.isEmpty()) {
-      return Optional.empty();
+  private void cantar() {
+    try {
+      EstadoJuego estado = fachada.cantarSiguienteCarta();
+      if (estado == null) {
+        return;
+      }
+      byte[] datos = serializador.serializar(
+        new Evento(Tema.CARTA_CANTADA, new EventoCartaCantada(estado)));
+      dispatcher.enviar(hostBroker, puertoBroker, datos);
+    } catch (RuntimeException e) {
+      System.err.println("Error al gritar: " + e.getMessage());
     }
-    return Optional.of(gritadas.getLast());
   }
 }

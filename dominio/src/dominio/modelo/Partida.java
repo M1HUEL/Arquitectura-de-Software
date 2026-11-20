@@ -1,15 +1,17 @@
 package dominio.modelo;
 
-import dominio.griton.Griton;
+import comun.util.Baraja;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.SequencedSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -17,12 +19,13 @@ public final class Partida {
 
   private final String id;
   private final List<Jugador> jugadores;
-  private final Griton griton;
+  private final Baraja<Carta> baraja;
+  private final SequencedSet<Carta> gritadas = new LinkedHashSet<>();
   private final TipoVictoria tipoVictoria;
   private Jugador ganador;
   private EstadoPartida estado;
 
-  Partida(String id, List<Jugador> jugadores, Griton griton, TipoVictoria tipoVictoria) {
+  Partida(String id, List<Jugador> jugadores, Baraja<Carta> baraja, TipoVictoria tipoVictoria) {
     if (id == null || id.isBlank()) {
       throw new IllegalArgumentException("El id de la partida no puede estar vacío");
     }
@@ -39,17 +42,16 @@ public final class Partida {
     }
     this.id = id.trim();
     this.jugadores = new ArrayList<>(jugadores);
-    this.griton = Objects.requireNonNull(griton, "griton");
+    this.baraja = Objects.requireNonNull(baraja, "baraja");
     this.tipoVictoria = Objects.requireNonNull(tipoVictoria, "tipoVictoria");
     this.estado = EstadoPartida.CREADA;
   }
 
   public static Partida crear(List<String> nombresJugadores, TipoVictoria tipoVictoria,
-    Random aleatorio, long intervaloMs, Runnable accionGritar) {
+    Random aleatorio) {
     Objects.requireNonNull(nombresJugadores, "nombresJugadores");
     Objects.requireNonNull(tipoVictoria, "tipoVictoria");
     Objects.requireNonNull(aleatorio, "aleatorio");
-    Objects.requireNonNull(accionGritar, "accionGritar");
     if (nombresJugadores.isEmpty()) {
       throw new IllegalArgumentException("La partida debe tener al menos un jugador");
     }
@@ -65,18 +67,14 @@ public final class Partida {
       }
       jugadores.add(new Jugador(limpio, Tablero.generar(aleatorio)));
     }
-    return new Partida(UUID.randomUUID().toString(), jugadores,
-      Griton.completo(aleatorio, intervaloMs, accionGritar), tipoVictoria);
+    Baraja<Carta> baraja = new Baraja<>(CatalogoCartas.obtenerTodas());
+    baraja.revolver(aleatorio);
+    return new Partida(UUID.randomUUID().toString(), jugadores, baraja, tipoVictoria);
   }
 
   public void iniciar() {
     exigirEstado(EstadoPartida.CREADA);
     estado = EstadoPartida.EN_CURSO;
-    griton.iniciar();
-  }
-
-  public void detenerGriton() {
-    griton.detener();
   }
 
   public void pausar() {
@@ -96,12 +94,14 @@ public final class Partida {
 
   public Carta cantarSiguiente() {
     exigirEnCurso();
-    return griton.gritarSiguiente();
+    Carta carta = baraja.sacarSiguiente();
+    gritadas.add(carta);
+    return carta;
   }
 
   public void cerrarPorBarajaAgotada() {
     exigirEnCurso();
-    if (griton.puedeGritar()) {
+    if (!baraja.estaVacia()) {
       throw new IllegalStateException("Todavía quedan cartas por cantar");
     }
     finalizar();
@@ -113,7 +113,7 @@ public final class Partida {
     exigirEnCurso();
     Jugador participante = buscarJugador(jugadorId)
       .orElseThrow(() -> new IllegalArgumentException("El jugador no participa en la partida"));
-    if (!griton.fueGritada(carta)) {
+    if (!fueGritada(carta)) {
       throw new IllegalArgumentException("La carta todavía no se ha cantado");
     }
     if (!participante.obtenerTablero().contiene(carta)) {
@@ -159,7 +159,11 @@ public final class Partida {
   }
 
   public boolean puedeCantar() {
-    return estado == EstadoPartida.EN_CURSO && griton.puedeGritar();
+    return estado == EstadoPartida.EN_CURSO && !baraja.estaVacia();
+  }
+
+  public boolean fueGritada(Carta carta) {
+    return gritadas.contains(carta);
   }
 
   public boolean estaEnCurso() {
@@ -197,19 +201,22 @@ public final class Partida {
   }
 
   public List<Carta> obtenerCartasCantadas() {
-    return griton.obtenerCartasGritadas();
+    return List.copyOf(gritadas);
   }
 
   public List<Carta> obtenerCartasRestantes() {
-    return griton.obtenerCartasRestantes();
+    return baraja.obtenerCartasRestantes();
   }
 
   public int obtenerRestantes() {
-    return griton.obtenerRestantes();
+    return baraja.obtenerRestantes();
   }
 
   public Optional<Carta> obtenerUltimaCarta() {
-    return griton.obtenerUltimaCarta();
+    if (gritadas.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(gritadas.getLast());
   }
 
   private void exigirEnCurso() {

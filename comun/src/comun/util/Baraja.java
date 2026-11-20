@@ -1,4 +1,4 @@
-package dominio.modelo;
+package comun.util;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,16 +9,16 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
-public final class Baraja {
+public final class Baraja<T> {
 
-  private final List<Carta> cartas;
+  private final List<T> cartas;
 
-  public Baraja(List<Carta> cartas) {
+  public Baraja(List<T> cartas) {
     Objects.requireNonNull(cartas, "cartas");
-    for (Carta carta : cartas) {
+    for (T carta : cartas) {
       Objects.requireNonNull(carta, "Las cartas no pueden contener valores nulos");
     }
-    Set<Carta> unicas = new HashSet<>(cartas);
+    Set<T> unicas = new HashSet<>(cartas);
     if (unicas.size() != cartas.size()) {
       throw new IllegalArgumentException("La baraja no puede contener cartas repetidas");
     }
@@ -30,7 +30,7 @@ public final class Baraja {
     Collections.shuffle(cartas, aleatorio);
   }
 
-  public Carta sacarSiguiente() {
+  public T sacarSiguiente() {
     if (estaVacia()) {
       throw new NoSuchElementException("No quedan cartas en la baraja");
     }
@@ -45,7 +45,7 @@ public final class Baraja {
     return cartas.size();
   }
 
-  public List<Carta> obtenerCartasRestantes() {
+  public List<T> obtenerCartasRestantes() {
     return List.copyOf(cartas);
   }
 }
