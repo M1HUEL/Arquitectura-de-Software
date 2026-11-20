@@ -82,7 +82,26 @@ public class FachadaBroker implements Fachada {
   }
 
   private void enviar(Serializable evento) {
-    byte[] datos = serializador.serializar(new Evento(Tema.DOMINIO, evento));
+    byte[] datos = serializador.serializar(new Evento(temaDe(evento), evento));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
+  }
+
+  private Tema temaDe(Serializable evento) {
+    if (evento instanceof EventoIniciarPartida) {
+      return Tema.INICIAR_PARTIDA;
+    }
+    if (evento instanceof EventoMarcarCasilla) {
+      return Tema.MARCAR_CASILLA;
+    }
+    if (evento instanceof EventoSeleccionarPatron) {
+      return Tema.SELECCIONAR_PATRON;
+    }
+    if (evento instanceof EventoGritarLoteria) {
+      return Tema.GRITAR_LOTERIA;
+    }
+    if (evento instanceof EventoCerrarPartida) {
+      return Tema.CERRAR_PARTIDA;
+    }
+    throw new IllegalArgumentException("Evento sin tema: " + evento.getClass().getSimpleName());
   }
 }

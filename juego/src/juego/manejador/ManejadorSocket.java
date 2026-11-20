@@ -3,7 +3,6 @@ package juego.manejador;
 import comun.CartaMensaje;
 import comun.EstadoJuego;
 import comun.evento.Evento;
-import comun.evento.Tema;
 import comun.evento.EventoCartaCantada;
 import comun.evento.EventoError;
 import comun.evento.EventoPartidaFinalizada;
@@ -51,10 +50,6 @@ public class ManejadorSocket implements IReceptorExterno {
     }
     if (!(sobre instanceof Evento evento)) {
       modelo.registrarError("El servidor envió un mensaje inesperado");
-      return;
-    }
-    if (evento.tema() != Tema.JUEGO) {
-      modelo.registrarError("El servidor envió un tema inesperado");
       return;
     }
     Object contenido = evento.payload();

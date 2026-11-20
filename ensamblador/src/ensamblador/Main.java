@@ -29,6 +29,12 @@ public class Main {
   private static final int PUERTO_CLIENTE = 7002;
   private static final int SEGUNDOS_ESPERA = 30;
   private static final long INTERVALO_CARTAS = 3000L;
+  private static final List<Tema> TEMAS_COMANDO = List.of(
+    Tema.INICIAR_PARTIDA, Tema.MARCAR_CASILLA, Tema.SELECCIONAR_PATRON,
+    Tema.GRITAR_LOTERIA, Tema.CERRAR_PARTIDA);
+  private static final List<Tema> TEMAS_EVENTO = List.of(
+    Tema.CARTA_CANTADA, Tema.ESTADO_SINCRONIZADO, Tema.PARTIDA_GANADA,
+    Tema.PARTIDA_FINALIZADA, Tema.ERROR);
 
   public static void main(String[] args) {
     if (args.length == 0) {
@@ -54,17 +60,19 @@ public class Main {
     Broker broker = new Broker(new Serializador(PATRON_FILTRO), dispatcher);
     Receptor receptor = new Receptor(broker);
     try {
-      broker.suscribir(Tema.DOMINIO, HOST, puertoDominio);
+      for (Tema tema : TEMAS_COMANDO) {
+        broker.suscribir(tema, HOST, puertoDominio);
+      }
       if (args.length > 3) {
         for (int i = 3; i < args.length; i++) {
           int puertoCliente = entero(args, i, -1);
           if (puertoCliente > 0) {
-            broker.suscribir(Tema.JUEGO, HOST, puertoCliente);
+            suscribirCliente(broker, puertoCliente);
           }
         }
       } else {
-        broker.suscribir(Tema.JUEGO, HOST, PUERTO_CLIENTE);
-        broker.suscribir(Tema.JUEGO, HOST, PUERTO_CLIENTE + 1);
+        suscribirCliente(broker, PUERTO_CLIENTE);
+        suscribirCliente(broker, PUERTO_CLIENTE + 1);
       }
       dispatcher.iniciar();
       iniciarReceptor(receptor, puertoBroker);
@@ -77,6 +85,12 @@ public class Main {
     System.out.println("Broker escuchando en " + HOST + ":" + receptor.obtenerPuerto());
     System.out.println("Dominio suscrito en " + HOST + ":" + puertoDominio);
     bloquear();
+  }
+
+  private static void suscribirCliente(Broker broker, int puertoCliente) {
+    for (Tema tema : TEMAS_EVENTO) {
+      broker.suscribir(tema, HOST, puertoCliente);
+    }
   }
 
   private static void iniciarDominio(String[] args) {

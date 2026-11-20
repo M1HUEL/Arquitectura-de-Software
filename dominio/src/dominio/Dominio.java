@@ -185,10 +185,6 @@ public class Dominio implements IReceptorExterno {
       return;
     }
     Object contenido = evento.payload();
-    if (evento.tema() != Tema.DOMINIO) {
-      publicarErrorSeguro(new IllegalArgumentException("Tema inesperado del broker"));
-      return;
-    }
     synchronized (candado) {
       if (!activo) {
         return;
@@ -467,8 +463,27 @@ public class Dominio implements IReceptorExterno {
   }
 
   private void publicar(Serializable evento) {
-    byte[] datos = serializador.serializar(new Evento(Tema.JUEGO, evento));
+    byte[] datos = serializador.serializar(new Evento(temaDe(evento), evento));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
+  }
+
+  private Tema temaDe(Serializable evento) {
+    if (evento instanceof EventoCartaCantada) {
+      return Tema.CARTA_CANTADA;
+    }
+    if (evento instanceof EventoEstadoSincronizado) {
+      return Tema.ESTADO_SINCRONIZADO;
+    }
+    if (evento instanceof EventoPartidaGanada) {
+      return Tema.PARTIDA_GANADA;
+    }
+    if (evento instanceof EventoPartidaFinalizada) {
+      return Tema.PARTIDA_FINALIZADA;
+    }
+    if (evento instanceof EventoError) {
+      return Tema.ERROR;
+    }
+    throw new IllegalArgumentException("Evento sin tema: " + evento.getClass().getSimpleName());
   }
 
   private EstadoJuego estadoJuego() {
