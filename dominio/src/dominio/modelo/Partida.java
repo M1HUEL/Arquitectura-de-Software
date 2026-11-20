@@ -21,6 +21,7 @@ public final class Partida {
   private final Baraja<Carta> baraja;
   private final SequencedSet<Carta> gritadas = new LinkedHashSet<>();
   private final TipoVictoria tipoVictoria;
+  private Jugador ganador;
   private EstadoPartida estado;
 
   Partida(String id, List<Jugador> jugadores, Baraja<Carta> baraja, TipoVictoria tipoVictoria) {
@@ -142,6 +143,7 @@ public final class Partida {
       return false;
     }
     participante.premiarLoteria();
+    ganador = participante;
     finalizar();
     return true;
   }
@@ -181,6 +183,14 @@ public final class Partida {
 
   public List<Jugador> obtenerJugadores() {
     return List.copyOf(jugadores);
+  }
+
+  public Optional<Jugador> obtenerGanador() {
+    return Optional.ofNullable(ganador);
+  }
+
+  public List<Carta> obtenerCartasCantadas() {
+    return List.copyOf(gritadas);
   }
 
   public int obtenerRestantes() {

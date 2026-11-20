@@ -7,6 +7,7 @@ import comun.evento.EventoSeleccionarPatron;
 import comun.evento.EventoGritarLoteria;
 import comun.evento.Evento;
 import comun.evento.Instruccion;
+import comun.evento.EventoCartaCantada;
 import comun.evento.EventoCasillaMarcada;
 import comun.evento.EventoError;
 import comun.evento.EventoPartidaFinalizada;
@@ -151,9 +152,9 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
 
   private void procesar(Object contenido) {
     if (contenido instanceof EventoIniciarPartida evento) {
-      if (partida != null && partida.estaFinalizada()) {
-        publicar(new EventoError("La partida ya terminó"));
-      } else if (esperaMs > 0 && partida == null) {
+      if (partida != null) {
+        publicarReplay();
+      } else if (esperaMs > 0) {
         registrarJugador(evento.jugador());
       } else {
         iniciarPartida(evento.jugador());
@@ -177,10 +178,6 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
   }
 
   private void iniciarPartida(String jugador) {
-    if (partida != null && !partida.estaFinalizada()) {
-      publicar(eventoPartidaIniciada());
-      return;
-    }
     if (jugador == null || jugador.isBlank()
       || !contieneNombre(humanos, jugador)) {
       publicar(new EventoError("El jugador no participa en la partida"));
@@ -414,6 +411,26 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
   private void publicar(Instruccion contenido) {
     byte[] datos = serializador.serializar(new Evento(contenido));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
+  }
+
+  private void publicarReplay() {
+    publicar(eventoPartidaIniciada());
+    List<Carta> cantadas = partida.obtenerCartasCantadas();
+    int total = partida.obtenerRestantes() + cantadas.size();
+    for (int i = 0; i < cantadas.size(); i++) {
+      publicar(new EventoCartaCantada(cantadas.get(i).obtenerId(), total - i - 1));
+    }
+    for (Jugador jugador : partida.obtenerJugadores()) {
+      for (Carta marcada : jugador.obtenerTablero().obtenerCartasMarcadas()) {
+        publicar(new EventoCasillaMarcada(jugador.obtenerNombre(), marcada.obtenerId()));
+      }
+      publicar(new EventoPuntajeActualizado(jugador.obtenerNombre(), jugador.obtenerPuntos()));
+    }
+    partida.obtenerGanador()
+      .ifPresent(ganador -> publicar(new EventoPartidaGanada(ganador.obtenerNombre())));
+    if (partida.estaFinalizada()) {
+      publicar(new EventoPartidaFinalizada());
+    }
   }
 
   private EventoPartidaIniciada eventoPartidaIniciada() {
