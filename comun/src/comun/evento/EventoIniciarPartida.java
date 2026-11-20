@@ -1,6 +1,9 @@
 package comun.evento;
 
-import java.io.Serializable;
+public record EventoIniciarPartida(String jugador) implements Instruccion {
 
-public record EventoIniciarPartida(String jugador) implements Serializable {
+  @Override
+  public Tema tema() {
+    return Tema.INICIAR_PARTIDA;
+  }
 }

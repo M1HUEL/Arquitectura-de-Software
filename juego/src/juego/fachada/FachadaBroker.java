@@ -6,11 +6,10 @@ import comun.evento.EventoMarcarCasilla;
 import comun.evento.EventoSeleccionarPatron;
 import comun.evento.EventoGritarLoteria;
 import comun.evento.Evento;
-import comun.evento.Tema;
+import comun.evento.Instruccion;
 import comunicacion.api.IDispatcher;
 import juego.modelo.Patron;
 import comun.serializador.ISerializador;
-import java.io.Serializable;
 
 public class FachadaBroker implements Fachada {
 
@@ -78,27 +77,8 @@ public class FachadaBroker implements Fachada {
     }
   }
 
-  private void enviar(Serializable evento) {
-    byte[] datos = serializador.serializar(new Evento(temaDe(evento), evento));
+  private void enviar(Instruccion contenido) {
+    byte[] datos = serializador.serializar(new Evento(contenido));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
-  }
-
-  private Tema temaDe(Serializable evento) {
-    if (evento instanceof EventoIniciarPartida) {
-      return Tema.INICIAR_PARTIDA;
-    }
-    if (evento instanceof EventoMarcarCasilla) {
-      return Tema.MARCAR_CASILLA;
-    }
-    if (evento instanceof EventoSeleccionarPatron) {
-      return Tema.SELECCIONAR_PATRON;
-    }
-    if (evento instanceof EventoGritarLoteria) {
-      return Tema.GRITAR_LOTERIA;
-    }
-    if (evento instanceof EventoCerrarPartida) {
-      return Tema.CERRAR_PARTIDA;
-    }
-    throw new IllegalArgumentException("Evento sin tema: " + evento.getClass().getSimpleName());
   }
 }

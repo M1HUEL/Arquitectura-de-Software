@@ -1,6 +1,9 @@
 package comun.evento;
 
-import java.io.Serializable;
+public record EventoCartaCantada(int cartaId, int restantes) implements Instruccion {
 
-public record EventoCartaCantada(int cartaId, int restantes) implements Serializable {
+  @Override
+  public Tema tema() {
+    return Tema.CARTA_CANTADA;
+  }
 }

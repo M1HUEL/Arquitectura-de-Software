@@ -6,7 +6,7 @@ import comun.evento.EventoMarcarCasilla;
 import comun.evento.EventoSeleccionarPatron;
 import comun.evento.EventoGritarLoteria;
 import comun.evento.Evento;
-import comun.evento.Tema;
+import comun.evento.Instruccion;
 import comun.evento.EventoCasillaMarcada;
 import comun.evento.EventoError;
 import comun.evento.EventoPartidaFinalizada;
@@ -23,7 +23,6 @@ import dominio.modelo.CatalogoCartas;
 import dominio.modelo.Jugador;
 import dominio.modelo.Partida;
 import dominio.modelo.TipoVictoria;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -462,34 +461,9 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
     }
   }
 
-  private void publicar(Serializable evento) {
-    byte[] datos = serializador.serializar(new Evento(temaDe(evento), evento));
+  private void publicar(Instruccion contenido) {
+    byte[] datos = serializador.serializar(new Evento(contenido));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
-  }
-
-  private Tema temaDe(Serializable evento) {
-    if (evento instanceof EventoPartidaIniciada) {
-      return Tema.PARTIDA_INICIADA;
-    }
-    if (evento instanceof EventoCasillaMarcada) {
-      return Tema.CASILLA_MARCADA;
-    }
-    if (evento instanceof EventoPatronDeclarado) {
-      return Tema.PATRON_DECLARADO;
-    }
-    if (evento instanceof EventoPuntajeActualizado) {
-      return Tema.PUNTAJE_ACTUALIZADO;
-    }
-    if (evento instanceof EventoPartidaGanada) {
-      return Tema.PARTIDA_GANADA;
-    }
-    if (evento instanceof EventoPartidaFinalizada) {
-      return Tema.PARTIDA_FINALIZADA;
-    }
-    if (evento instanceof EventoError) {
-      return Tema.ERROR;
-    }
-    throw new IllegalArgumentException("Evento sin tema: " + evento.getClass().getSimpleName());
   }
 
   private EventoPartidaIniciada eventoPartidaIniciada() {

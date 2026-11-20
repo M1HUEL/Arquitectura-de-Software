@@ -1,6 +1,9 @@
 package comun.evento;
 
-import java.io.Serializable;
+public record EventoGritarLoteria(String jugador, String patron) implements Instruccion {
 
-public record EventoGritarLoteria(String jugador, String patron) implements Serializable {
+  @Override
+  public Tema tema() {
+    return Tema.GRITAR_LOTERIA;
+  }
 }

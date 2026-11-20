@@ -1,6 +1,9 @@
 package comun.evento;
 
-import java.io.Serializable;
+public record EventoError(String mensaje) implements Instruccion {
 
-public record EventoError(String mensaje) implements Serializable {
+  @Override
+  public Tema tema() {
+    return Tema.ERROR;
+  }
 }

@@ -1,7 +1,10 @@
 package comun.evento;
 
-import java.io.Serializable;
-
 public record EventoPatronDeclarado(String jugador, String patron, int puntos)
-  implements Serializable {
+  implements Instruccion {
+
+  @Override
+  public Tema tema() {
+    return Tema.PATRON_DECLARADO;
+  }
 }

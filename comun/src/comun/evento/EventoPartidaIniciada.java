@@ -1,6 +1,5 @@
 package comun.evento;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,7 +7,7 @@ public record EventoPartidaIniciada(
   List<String> nombresJugadores,
   List<List<Integer>> cartasPorJugador,
   int restantes
-) implements Serializable {
+) implements Instruccion {
 
   public EventoPartidaIniciada {
     nombresJugadores = nombresJugadores == null
@@ -19,5 +18,10 @@ public record EventoPartidaIniciada(
       copias.add(cartas == null ? new ArrayList<>() : new ArrayList<>(cartas));
     }
     cartasPorJugador = copias;
+  }
+
+  @Override
+  public Tema tema() {
+    return Tema.PARTIDA_INICIADA;
   }
 }

@@ -2,7 +2,6 @@ package dominio.griton;
 
 import comun.evento.Evento;
 import comun.evento.EventoCartaCantada;
-import comun.evento.Tema;
 import comun.serializador.ISerializador;
 import comunicacion.api.IDispatcher;
 import dominio.fachada.Fachada;
@@ -72,8 +71,7 @@ public final class Griton {
       }
       EventoCartaCantada contenido = new EventoCartaCantada(
         carta.getAsInt(), fachada.obtenerRestantes());
-      byte[] datos = serializador.serializar(
-        new Evento(Tema.CARTA_CANTADA, contenido));
+      byte[] datos = serializador.serializar(new Evento(contenido));
       dispatcher.enviar(hostBroker, puertoBroker, datos);
     } catch (RuntimeException e) {
       System.err.println("Error al gritar: " + e.getMessage());
