@@ -54,29 +54,27 @@ public final class Griton {
       hilo.setDaemon(true);
       return hilo;
     });
-    planificador.scheduleWithFixedDelay(this::cantar, 0, intervaloMs, TimeUnit.MILLISECONDS);
+    planificador.scheduleWithFixedDelay(() -> {
+      try {
+        Optional<CartaCantada> resultado = fachada.cantarSiguienteCarta();
+        if (resultado.isEmpty()) {
+          return;
+        }
+        CartaCantada cantada = resultado.get();
+        EventoCartaCantada contenido =
+          new EventoCartaCantada(cantada.cartaId(), cantada.restantes());
+        byte[] datos = serializador.serializar(new Evento(contenido));
+        dispatcher.enviar(hostBroker, puertoBroker, datos);
+      } catch (RuntimeException e) {
+        System.err.println("Error al gritar: " + e.getMessage());
+      }
+    }, 0, intervaloMs, TimeUnit.MILLISECONDS);
   }
 
   public void detener() {
     if (planificador != null) {
       planificador.shutdownNow();
       planificador = null;
-    }
-  }
-
-  private void cantar() {
-    try {
-      Optional<CartaCantada> resultado = fachada.cantarSiguienteCarta();
-      if (resultado.isEmpty()) {
-        return;
-      }
-      CartaCantada cantada = resultado.get();
-      EventoCartaCantada contenido =
-        new EventoCartaCantada(cantada.cartaId(), cantada.restantes());
-      byte[] datos = serializador.serializar(new Evento(contenido));
-      dispatcher.enviar(hostBroker, puertoBroker, datos);
-    } catch (RuntimeException e) {
-      System.err.println("Error al gritar: " + e.getMessage());
     }
   }
 }

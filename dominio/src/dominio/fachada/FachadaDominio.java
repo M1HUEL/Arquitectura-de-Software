@@ -146,57 +146,127 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
       if (!activo) {
         return;
       }
-      procesar(contenido);
-    }
-  }
-
-  private void procesar(Object contenido) {
-    if (contenido instanceof EventoIniciarPartida evento) {
-      if (partida != null) {
-        publicarReplay();
-      } else if (esperaMs > 0) {
-        registrarJugador(evento.jugador());
+      if (contenido instanceof EventoIniciarPartida inicio) {
+        if (partida != null) {
+          publicar(eventoPartidaIniciada());
+          List<Carta> cantadas = partida.obtenerCartasCantadas();
+          int total = partida.obtenerRestantes() + cantadas.size();
+          for (int i = 0; i < cantadas.size(); i++) {
+            publicar(new EventoCartaCantada(cantadas.get(i).obtenerId(), total - i - 1));
+          }
+          for (Jugador jugador : partida.obtenerJugadores()) {
+            for (Carta marcada : jugador.obtenerTablero().obtenerCartasMarcadas()) {
+              publicar(new EventoCasillaMarcada(jugador.obtenerNombre(), marcada.obtenerId()));
+            }
+            publicar(new EventoPuntajeActualizado(jugador.obtenerNombre(), jugador.obtenerPuntos()));
+          }
+          partida.obtenerGanador()
+            .ifPresent(ganador -> publicar(new EventoPartidaGanada(ganador.obtenerNombre())));
+          if (partida.estaFinalizada()) {
+            publicar(new EventoPartidaFinalizada());
+          }
+        } else if (esperaMs > 0) {
+          String nombre = inicio.jugador();
+          if (nombre == null || nombre.isBlank()) {
+            publicar(new EventoError("El nombre del jugador no puede estar vacío"));
+            return;
+          }
+          String limpio = nombre.trim();
+          if (!contieneNombre(humanos, limpio)) {
+            humanos.add(limpio);
+            System.out.println("Jugador conectado: " + limpio
+              + " (" + humanos.size() + " en espera)");
+          }
+        } else {
+          String jugador = inicio.jugador();
+          if (jugador == null || jugador.isBlank()
+            || !contieneNombre(humanos, jugador)) {
+            publicar(new EventoError("El jugador no participa en la partida"));
+            return;
+          }
+          crearPartida(new ArrayList<>(humanos));
+        }
+      } else if (contenido instanceof EventoMarcarCasilla marca) {
+        if (partida == null || !partida.estaEnCurso()) {
+          publicar(new EventoError("La partida no está en curso"));
+          return;
+        }
+        try {
+          Carta carta = CatalogoCartas.obtenerPorId(marca.cartaId());
+          Jugador jugador = buscarJugador(marca.jugador());
+          if (jugador == null) {
+            publicar(new EventoError("El jugador no participa en la partida"));
+            return;
+          }
+          if (!partida.marcar(jugador.obtenerId(), carta)) {
+            publicar(new EventoError("La casilla ya estaba marcada"));
+            return;
+          }
+          publicar(new EventoCasillaMarcada(jugador.obtenerNombre(), carta.obtenerId()));
+          publicar(new EventoPuntajeActualizado(
+            jugador.obtenerNombre(), jugador.obtenerPuntos()));
+        } catch (RuntimeException e) {
+          publicarErrorSeguro(e);
+        }
+      } else if (contenido instanceof EventoSeleccionarPatron seleccion) {
+        if (partida == null || !partida.estaEnCurso()) {
+          publicar(new EventoError("La partida no está en curso"));
+          return;
+        }
+        Jugador jugador = buscarJugador(seleccion.jugador());
+        if (jugador == null) {
+          publicar(new EventoError("El jugador no participa en la partida"));
+          return;
+        }
+        try {
+          TipoVictoria tipo = convertirTipoVictoria(seleccion.patron());
+          if (!partida.declararPatron(jugador.obtenerId(), tipo)) {
+            publicar(new EventoError("El patrón " + tipo.obtenerDescripcion()
+              + " no está completo o ya fue declarado"));
+            return;
+          }
+          publicar(new EventoPatronDeclarado(jugador.obtenerNombre(), tipo.name()));
+          publicar(new EventoPuntajeActualizado(
+            jugador.obtenerNombre(), jugador.obtenerPuntos()));
+        } catch (RuntimeException e) {
+          publicarErrorSeguro(e);
+        }
+      } else if (contenido instanceof EventoGritarLoteria grito) {
+        if (partida == null || !partida.estaEnCurso()) {
+          publicar(new EventoError("La partida no está en curso"));
+          return;
+        }
+        Jugador jugador = buscarJugador(grito.jugador());
+        if (jugador == null) {
+          publicar(new EventoError("El jugador no participa en la partida"));
+          return;
+        }
+        try {
+          if (!partida.gritarLoteria(jugador.obtenerId())) {
+            publicar(new EventoError("Todavía no completas el patrón "
+              + partida.obtenerTipoVictoria().obtenerDescripcion()));
+            publicar(new EventoPuntajeActualizado(
+              jugador.obtenerNombre(), jugador.obtenerPuntos()));
+            return;
+          }
+          griton.detener();
+          publicar(new EventoPuntajeActualizado(
+            jugador.obtenerNombre(), jugador.obtenerPuntos()));
+          publicar(new EventoPartidaGanada(jugador.obtenerNombre()));
+        } catch (RuntimeException e) {
+          publicarErrorSeguro(e);
+        }
+      } else if (contenido instanceof EventoCerrarPartida) {
+        finalizarPartida();
       } else {
-        iniciarPartida(evento.jugador());
+        publicar(new EventoError("Evento desconocido: " + contenido.getClass().getSimpleName()));
       }
-    } else if (contenido instanceof EventoMarcarCasilla evento) {
-      marcar(evento.jugador(), evento.cartaId());
-    } else if (contenido instanceof EventoSeleccionarPatron evento) {
-      declararPatron(evento.jugador(), evento.patron());
-    } else if (contenido instanceof EventoGritarLoteria evento) {
-      gritarVictoria(evento.jugador());
-    } else if (contenido instanceof EventoCerrarPartida) {
-      finalizarPartida();
-    } else {
-      publicar(new EventoError("Evento desconocido: " + contenido.getClass().getSimpleName()));
     }
   }
 
   @Override
   public boolean estaActivo() {
     return activo;
-  }
-
-  private void iniciarPartida(String jugador) {
-    if (jugador == null || jugador.isBlank()
-      || !contieneNombre(humanos, jugador)) {
-      publicar(new EventoError("El jugador no participa en la partida"));
-      return;
-    }
-    crearPartida(new ArrayList<>(humanos));
-  }
-
-  private void registrarJugador(String jugador) {
-    if (jugador == null || jugador.isBlank()) {
-      publicar(new EventoError("El nombre del jugador no puede estar vacío"));
-      return;
-    }
-    String limpio = jugador.trim();
-    if (!contieneNombre(humanos, limpio)) {
-      humanos.add(limpio);
-      System.out.println("Jugador conectado: " + limpio
-        + " (" + humanos.size() + " en espera)");
-    }
   }
 
   private void iniciarEspera() {
@@ -268,82 +338,6 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
     }
   }
 
-  private void marcar(String nombreJugador, int cartaId) {
-    if (partida == null || !partida.estaEnCurso()) {
-      publicar(new EventoError("La partida no está en curso"));
-      return;
-    }
-    try {
-      Carta carta = CatalogoCartas.obtenerPorId(cartaId);
-      Jugador jugador = buscarJugador(nombreJugador);
-      if (jugador == null) {
-        publicar(new EventoError("El jugador no participa en la partida"));
-        return;
-      }
-      if (!partida.marcar(jugador.obtenerId(), carta)) {
-        publicar(new EventoError("La casilla ya estaba marcada"));
-        return;
-      }
-      publicar(new EventoCasillaMarcada(jugador.obtenerNombre(), carta.obtenerId()));
-      publicar(new EventoPuntajeActualizado(
-        jugador.obtenerNombre(), jugador.obtenerPuntos()));
-    } catch (RuntimeException e) {
-      publicarErrorSeguro(e);
-    }
-  }
-
-  private void declararPatron(String nombreJugador, String patron) {
-    if (partida == null || !partida.estaEnCurso()) {
-      publicar(new EventoError("La partida no está en curso"));
-      return;
-    }
-    Jugador jugador = buscarJugador(nombreJugador);
-    if (jugador == null) {
-      publicar(new EventoError("El jugador no participa en la partida"));
-      return;
-    }
-    try {
-      TipoVictoria tipo = convertirTipoVictoria(patron);
-      if (!partida.declararPatron(jugador.obtenerId(), tipo)) {
-        publicar(new EventoError("El patrón " + tipo.obtenerDescripcion()
-          + " no está completo o ya fue declarado"));
-        return;
-      }
-      publicar(new EventoPatronDeclarado(jugador.obtenerNombre(), tipo.name()));
-      publicar(new EventoPuntajeActualizado(
-        jugador.obtenerNombre(), jugador.obtenerPuntos()));
-    } catch (RuntimeException e) {
-      publicarErrorSeguro(e);
-    }
-  }
-
-  private void gritarVictoria(String nombreJugador) {
-    if (partida == null || !partida.estaEnCurso()) {
-      publicar(new EventoError("La partida no está en curso"));
-      return;
-    }
-    Jugador jugador = buscarJugador(nombreJugador);
-    if (jugador == null) {
-      publicar(new EventoError("El jugador no participa en la partida"));
-      return;
-    }
-    try {
-      if (!partida.gritarLoteria(jugador.obtenerId())) {
-        publicar(new EventoError("Todavía no completas el patrón "
-          + partida.obtenerTipoVictoria().obtenerDescripcion()));
-        publicar(new EventoPuntajeActualizado(
-          jugador.obtenerNombre(), jugador.obtenerPuntos()));
-        return;
-      }
-      griton.detener();
-      publicar(new EventoPuntajeActualizado(
-        jugador.obtenerNombre(), jugador.obtenerPuntos()));
-      publicar(new EventoPartidaGanada(jugador.obtenerNombre()));
-    } catch (RuntimeException e) {
-      publicarErrorSeguro(e);
-    }
-  }
-
   private void finalizarPartida() {
     if (partida == null || partida.estaFinalizada()) {
       return;
@@ -394,15 +388,11 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
     return false;
   }
 
-  private void publicarError(RuntimeException e) {
-    String mensaje = e.getMessage();
-    publicar(new EventoError(mensaje == null || mensaje.isBlank()
-      ? "Error inesperado del dominio" : mensaje));
-  }
-
   private void publicarErrorSeguro(RuntimeException e) {
     try {
-      publicarError(e);
+      String mensaje = e.getMessage();
+      publicar(new EventoError(mensaje == null || mensaje.isBlank()
+        ? "Error inesperado del dominio" : mensaje));
     } catch (RuntimeException ignorada) {
       System.err.println("No se pudo publicar el error: " + ignorada.getMessage());
     }
@@ -411,26 +401,6 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
   private void publicar(Instruccion contenido) {
     byte[] datos = serializador.serializar(new Evento(contenido));
     dispatcher.enviar(hostBroker, puertoBroker, datos);
-  }
-
-  private void publicarReplay() {
-    publicar(eventoPartidaIniciada());
-    List<Carta> cantadas = partida.obtenerCartasCantadas();
-    int total = partida.obtenerRestantes() + cantadas.size();
-    for (int i = 0; i < cantadas.size(); i++) {
-      publicar(new EventoCartaCantada(cantadas.get(i).obtenerId(), total - i - 1));
-    }
-    for (Jugador jugador : partida.obtenerJugadores()) {
-      for (Carta marcada : jugador.obtenerTablero().obtenerCartasMarcadas()) {
-        publicar(new EventoCasillaMarcada(jugador.obtenerNombre(), marcada.obtenerId()));
-      }
-      publicar(new EventoPuntajeActualizado(jugador.obtenerNombre(), jugador.obtenerPuntos()));
-    }
-    partida.obtenerGanador()
-      .ifPresent(ganador -> publicar(new EventoPartidaGanada(ganador.obtenerNombre())));
-    if (partida.estaFinalizada()) {
-      publicar(new EventoPartidaFinalizada());
-    }
   }
 
   private EventoPartidaIniciada eventoPartidaIniciada() {
