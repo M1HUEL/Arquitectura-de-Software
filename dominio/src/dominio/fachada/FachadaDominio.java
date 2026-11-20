@@ -62,53 +62,6 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
     IDispatcher dispatcher,
     String hostBroker,
     int puertoBroker,
-    String jugadorLocal,
-    long intervaloMs
-  ) {
-    this(serializador, dispatcher, hostBroker, puertoBroker, List.of(jugadorLocal), intervaloMs);
-  }
-
-  public FachadaDominio(
-    ISerializador serializador,
-    IDispatcher dispatcher,
-    String hostBroker,
-    int puertoBroker,
-    String jugadorLocal,
-    long intervaloMs,
-    long semilla
-  ) {
-    this(serializador, dispatcher, hostBroker, puertoBroker, List.of(jugadorLocal), intervaloMs, semilla);
-  }
-
-  public FachadaDominio(
-    ISerializador serializador,
-    IDispatcher dispatcher,
-    String hostBroker,
-    int puertoBroker,
-    List<String> jugadoresHumanos,
-    long intervaloMs
-  ) {
-    this(serializador, dispatcher, hostBroker, puertoBroker, jugadoresHumanos,
-      intervaloMs, new Random().nextLong());
-  }
-
-  public FachadaDominio(
-    ISerializador serializador,
-    IDispatcher dispatcher,
-    String hostBroker,
-    int puertoBroker,
-    List<String> jugadoresHumanos,
-    long intervaloMs,
-    long semilla
-  ) {
-    this(serializador, dispatcher, hostBroker, puertoBroker, jugadoresHumanos, intervaloMs, semilla, 0L);
-  }
-
-  public FachadaDominio(
-    ISerializador serializador,
-    IDispatcher dispatcher,
-    String hostBroker,
-    int puertoBroker,
     List<String> jugadoresHumanos,
     long intervaloMs,
     long semilla,

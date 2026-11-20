@@ -3,7 +3,6 @@ package dominio.modelo;
 import comun.util.Baraja;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -22,7 +21,6 @@ public final class Partida {
   private final Baraja<Carta> baraja;
   private final SequencedSet<Carta> gritadas = new LinkedHashSet<>();
   private final TipoVictoria tipoVictoria;
-  private Jugador ganador;
   private EstadoPartida estado;
 
   Partida(String id, List<Jugador> jugadores, Baraja<Carta> baraja, TipoVictoria tipoVictoria) {
@@ -144,7 +142,6 @@ public final class Partida {
       return false;
     }
     participante.premiarLoteria();
-    ganador = participante;
     finalizar();
     return true;
   }
@@ -174,10 +171,6 @@ public final class Partida {
     return estado == EstadoPartida.FINALIZADA;
   }
 
-  public String obtenerId() {
-    return id;
-  }
-
   public EstadoPartida obtenerEstado() {
     return estado;
   }
@@ -190,33 +183,8 @@ public final class Partida {
     return List.copyOf(jugadores);
   }
 
-  public Optional<Jugador> obtenerGanador() {
-    return Optional.ofNullable(ganador);
-  }
-
-  public List<Jugador> obtenerClasificacion() {
-    return jugadores.stream()
-      .sorted(Comparator.comparingInt(Jugador::obtenerPuntos).reversed())
-      .toList();
-  }
-
-  public List<Carta> obtenerCartasCantadas() {
-    return List.copyOf(gritadas);
-  }
-
-  public List<Carta> obtenerCartasRestantes() {
-    return baraja.obtenerCartasRestantes();
-  }
-
   public int obtenerRestantes() {
     return baraja.obtenerRestantes();
-  }
-
-  public Optional<Carta> obtenerUltimaCarta() {
-    if (gritadas.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(gritadas.getLast());
   }
 
   private void exigirEnCurso() {

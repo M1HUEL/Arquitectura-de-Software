@@ -44,8 +44,4 @@ public final class Baraja<T> {
   public int obtenerRestantes() {
     return cartas.size();
   }
-
-  public List<T> obtenerCartasRestantes() {
-    return List.copyOf(cartas);
-  }
 }
