@@ -33,12 +33,12 @@ public class Broker implements IReceptorExterno {
   }
 
   public void publicar(String tema, byte[] evento) {
-    List<GestorSuscriptores.Suscriptor> suscriptores = gestor.obtener(tema);
+    List<Suscriptor> suscriptores = gestor.obtener(tema);
     if (suscriptores.isEmpty()) {
       return;
     }
-    for (GestorSuscriptores.Suscriptor suscriptor : suscriptores) {
-      dispatcher.enviar(suscriptor.host(), suscriptor.puerto(), evento);
+    for (Suscriptor suscriptor : suscriptores) {
+      dispatcher.enviar(suscriptor.getHost(), suscriptor.getPuerto(), evento);
     }
   }
 

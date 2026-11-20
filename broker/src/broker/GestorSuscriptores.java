@@ -7,19 +7,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GestorSuscriptores {
 
-  public record Suscriptor(String tema, String host, int puerto) {
-
-    public Suscriptor {
-      validarTema(tema);
-      if (host == null || host.isBlank()) {
-        throw new IllegalArgumentException("El host no puede estar vacío");
-      }
-      if (puerto <= 0 || puerto > 65535) {
-        throw new IllegalArgumentException("El puerto no es válido: " + puerto);
-      }
-    }
-  }
-
   private final Map<String, CopyOnWriteArrayList<Suscriptor>> suscriptores = new ConcurrentHashMap<>();
 
   public void agregar(String tema, String host, int puerto) {
@@ -32,7 +19,8 @@ public class GestorSuscriptores {
   public void eliminar(String tema, String host, int puerto) {
     validarTema(tema);
     suscriptores.computeIfPresent(tema, (clave, lista) -> {
-      lista.remove(new Suscriptor(tema, host, puerto));
+      lista.removeIf(suscriptor -> suscriptor.getHost().equals(host)
+        && suscriptor.getPuerto() == puerto);
       return lista.isEmpty() ? null : lista;
     });
   }
