@@ -6,6 +6,7 @@ import comunicacion.api.IDispatcher;
 import comunicacion.api.IReceptorExterno;
 import comun.serializador.ISerializador;
 import java.util.List;
+import java.util.Objects;
 
 public class Broker implements IReceptorExterno {
 
@@ -26,11 +27,8 @@ public class Broker implements IReceptorExterno {
   }
 
   public void suscribir(Tema tema, String host, int puerto) {
-    gestor.agregar(tema, host, puerto);
-  }
-
-  public void desuscribir(Tema tema, String host, int puerto) {
-    gestor.eliminar(tema, host, puerto);
+    Objects.requireNonNull(tema, "El tema no puede ser nulo");
+    gestor.obtener(tema).addIfAbsent(new Suscriptor(tema, host, puerto));
   }
 
   public void publicar(Tema tema, byte[] evento) {
