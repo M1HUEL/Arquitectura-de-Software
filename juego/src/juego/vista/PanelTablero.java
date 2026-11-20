@@ -51,7 +51,14 @@ public class PanelTablero extends JPanel {
       JButton casilla = botonesPorCarta.get(id);
       if (casilla == null) {
         casilla = new JButton();
-        casilla.addActionListener(evento -> seleccionarCasilla(id));
+        casilla.addActionListener(evento -> {
+          for (Carta cartaActual : jugador.obtenerCartas()) {
+            if (cartaActual.obtenerId() == id) {
+              controlador.seleccionarCasilla(cartaActual, jugador);
+              return;
+            }
+          }
+        });
         botonesPorCarta.put(id, casilla);
         tablero.add(casilla);
       }
@@ -62,14 +69,5 @@ public class PanelTablero extends JPanel {
     }
     revalidate();
     repaint();
-  }
-
-  private void seleccionarCasilla(int id) {
-    for (Carta carta : jugador.obtenerCartas()) {
-      if (carta.obtenerId() == id) {
-        controlador.seleccionarCasilla(carta, jugador);
-        return;
-      }
-    }
   }
 }

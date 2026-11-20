@@ -59,7 +59,7 @@ public class PanelLateral extends JPanel {
       botonPatron.addActionListener(evento -> {
         Jugador local = this.jugadorLocal.get();
         if (local != null) {
-          seleccionarPatron(local, patron);
+          controlador.seleccionarPatron(local, patron);
         }
       });
       panelPatrones.add(botonPatron);
@@ -69,7 +69,7 @@ public class PanelLateral extends JPanel {
     botonCantarVictoria.addActionListener(evento -> {
       Jugador local = this.jugadorLocal.get();
       if (local != null) {
-        seleccionarVictoria(local);
+        controlador.seleccionarVictoria(local);
       }
     });
 
@@ -156,14 +156,6 @@ public class PanelLateral extends JPanel {
       modeloListaJugadores.addElement(
         jugador.obtenerNombre() + marca + " - Puntaje: " + jugador.obtenerPuntaje());
     }
-  }
-
-  public void seleccionarPatron(Jugador jugador, Patron patron) {
-    controlador.seleccionarPatron(jugador, patron);
-  }
-
-  public void seleccionarVictoria(Jugador jugador) {
-    controlador.seleccionarVictoria(jugador);
   }
 
   private String formatearEstado(EstadoPartida estado) {

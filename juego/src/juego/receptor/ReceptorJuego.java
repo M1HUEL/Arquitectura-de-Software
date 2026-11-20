@@ -49,29 +49,27 @@ public class ReceptorJuego implements IReceptorExterno {
       return;
     }
     Object contenido = evento.payload();
-    SwingUtilities.invokeLater(() -> procesar(contenido));
-  }
-
-  private void procesar(Object contenido) {
-    if (contenido instanceof EventoError evento) {
-      modelo.registrarError(evento.mensaje());
-    } else if (contenido instanceof EventoPartidaIniciada evento) {
-      modelo.iniciarPartida(
-        convertirJugadores(evento.nombresJugadores(), evento.cartasPorJugador()),
-        evento.restantes());
-    } else if (contenido instanceof EventoCartaCantada evento) {
-      modelo.cantarCarta(evento.cartaId(), evento.restantes());
-    } else if (contenido instanceof EventoCasillaMarcada evento) {
-      modelo.marcarCasilla(evento.jugador(), evento.cartaId());
-    } else if (contenido instanceof EventoPatronDeclarado) {
-      modelo.declararPatron();
-    } else if (contenido instanceof EventoPuntajeActualizado evento) {
-      modelo.actualizarPuntaje(evento.jugador(), evento.puntos());
-    } else if (contenido instanceof EventoPartidaGanada evento) {
-      modelo.ganarPartida(evento.jugador());
-    } else if (contenido instanceof EventoPartidaFinalizada) {
-      modelo.finalizarPartida();
-    }
+    SwingUtilities.invokeLater(() -> {
+      if (contenido instanceof EventoError error) {
+        modelo.registrarError(error.mensaje());
+      } else if (contenido instanceof EventoPartidaIniciada inicio) {
+        modelo.iniciarPartida(
+          convertirJugadores(inicio.nombresJugadores(), inicio.cartasPorJugador()),
+          inicio.restantes());
+      } else if (contenido instanceof EventoCartaCantada carta) {
+        modelo.cantarCarta(carta.cartaId(), carta.restantes());
+      } else if (contenido instanceof EventoCasillaMarcada casilla) {
+        modelo.marcarCasilla(casilla.jugador(), casilla.cartaId());
+      } else if (contenido instanceof EventoPatronDeclarado) {
+        modelo.declararPatron();
+      } else if (contenido instanceof EventoPuntajeActualizado punto) {
+        modelo.actualizarPuntaje(punto.jugador(), punto.puntos());
+      } else if (contenido instanceof EventoPartidaGanada ganada) {
+        modelo.ganarPartida(ganada.jugador());
+      } else if (contenido instanceof EventoPartidaFinalizada) {
+        modelo.finalizarPartida();
+      }
+    });
   }
 
   private List<Jugador> convertirJugadores(
