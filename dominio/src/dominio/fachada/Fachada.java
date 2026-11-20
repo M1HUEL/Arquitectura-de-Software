@@ -1,6 +1,6 @@
 package dominio.fachada;
 
-import comun.EstadoJuego;
+import java.util.OptionalInt;
 
 public interface Fachada {
 
@@ -10,5 +10,7 @@ public interface Fachada {
 
   boolean estaActivo();
 
-  EstadoJuego cantarSiguienteCarta();
+  OptionalInt cantarSiguienteCarta();
+
+  int obtenerRestantes();
 }

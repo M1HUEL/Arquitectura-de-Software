@@ -1,7 +1,6 @@
 package comun.evento;
 
-import comun.EstadoJuego;
 import java.io.Serializable;
 
-public record EventoCartaCantada(EstadoJuego estado) implements Serializable {
+public record EventoCartaCantada(int cartaId, int restantes) implements Serializable {
 }

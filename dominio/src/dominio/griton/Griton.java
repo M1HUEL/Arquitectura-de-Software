@@ -1,6 +1,5 @@
 package dominio.griton;
 
-import comun.EstadoJuego;
 import comun.evento.Evento;
 import comun.evento.EventoCartaCantada;
 import comun.evento.Tema;
@@ -8,6 +7,7 @@ import comun.serializador.ISerializador;
 import comunicacion.api.IDispatcher;
 import dominio.fachada.Fachada;
 import java.util.Objects;
+import java.util.OptionalInt;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -66,12 +66,14 @@ public final class Griton {
 
   private void cantar() {
     try {
-      EstadoJuego estado = fachada.cantarSiguienteCarta();
-      if (estado == null) {
+      OptionalInt carta = fachada.cantarSiguienteCarta();
+      if (carta.isEmpty()) {
         return;
       }
+      EventoCartaCantada contenido = new EventoCartaCantada(
+        carta.getAsInt(), fachada.obtenerRestantes());
       byte[] datos = serializador.serializar(
-        new Evento(Tema.CARTA_CANTADA, new EventoCartaCantada(estado)));
+        new Evento(Tema.CARTA_CANTADA, contenido));
       dispatcher.enviar(hostBroker, puertoBroker, datos);
     } catch (RuntimeException e) {
       System.err.println("Error al gritar: " + e.getMessage());

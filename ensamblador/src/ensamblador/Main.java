@@ -33,7 +33,8 @@ public class Main {
     Tema.INICIAR_PARTIDA, Tema.MARCAR_CASILLA, Tema.SELECCIONAR_PATRON,
     Tema.GRITAR_LOTERIA, Tema.CERRAR_PARTIDA);
   private static final List<Tema> TEMAS_EVENTO = List.of(
-    Tema.CARTA_CANTADA, Tema.ESTADO_SINCRONIZADO, Tema.PARTIDA_GANADA,
+    Tema.PARTIDA_INICIADA, Tema.CARTA_CANTADA, Tema.CASILLA_MARCADA,
+    Tema.PATRON_DECLARADO, Tema.PUNTAJE_ACTUALIZADO, Tema.PARTIDA_GANADA,
     Tema.PARTIDA_FINALIZADA, Tema.ERROR);
 
   public static void main(String[] args) {

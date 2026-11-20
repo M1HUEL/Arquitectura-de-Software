@@ -43,21 +43,81 @@ public class ModeloJuego implements Modelo {
     }
   }
 
-  public void actualizar(
-    EstadoPartida estado,
-    List<Jugador> jugadores,
-    List<Carta> cartasCantadas,
-    int restantes,
-    String ganador
-  ) {
-    this.estadoPartida = estado == null ? EstadoPartida.NO_INICIADA : estado;
+  public void iniciarPartida(List<Jugador> jugadores, int restantes) {
+    this.estadoPartida = EstadoPartida.EN_CURSO;
     this.jugadores = jugadores == null ? List.of() : List.copyOf(jugadores);
-    this.cartasCantadas = cartasCantadas == null ? List.of() : List.copyOf(cartasCantadas);
+    this.cartasCantadas = List.of();
     this.restantes = Math.max(0, restantes);
-    this.ganador = ganador == null ? "" : ganador;
+    this.ganador = "";
     this.ultimoError = "";
     this.mensaje = null;
     notificarObservadores();
+  }
+
+  public void cantarCarta(int cartaId, int restantes) {
+    Carta carta = Carta.desdeId(cartaId);
+    if (!cartasCantadas.contains(carta)) {
+      List<Carta> actualizadas = new ArrayList<>(cartasCantadas);
+      actualizadas.add(carta);
+      this.cartasCantadas = List.copyOf(actualizadas);
+    }
+    this.restantes = Math.max(0, restantes);
+    notificarObservadores();
+  }
+
+  public void marcarCasilla(String nombreJugador, int cartaId, int puntos) {
+    Jugador jugador = buscarJugador(nombreJugador);
+    if (jugador != null) {
+      Carta carta = Carta.desdeId(cartaId);
+      for (Carta propia : jugador.obtenerCartas()) {
+        if (propia.equals(carta)) {
+          jugador.marcarCasilla(propia);
+          break;
+        }
+      }
+      jugador.establecerPuntaje(puntos);
+    }
+    notificarObservadores();
+  }
+
+  public void declararPatron(String nombreJugador, String patron, int puntos) {
+    actualizarPuntaje(nombreJugador, puntos);
+  }
+
+  public void actualizarPuntaje(String nombreJugador, int puntos) {
+    Jugador jugador = buscarJugador(nombreJugador);
+    if (jugador != null) {
+      jugador.establecerPuntaje(puntos);
+    }
+    notificarObservadores();
+  }
+
+  public void ganarPartida(String nombreJugador, int puntos) {
+    Jugador jugador = buscarJugador(nombreJugador);
+    if (jugador != null) {
+      jugador.establecerPuntaje(puntos);
+    }
+    this.ganador = nombreJugador == null ? "" : nombreJugador.trim();
+    this.estadoPartida = EstadoPartida.TERMINADA;
+    notificarObservadores();
+  }
+
+  public void finalizarPartida() {
+    this.estadoPartida = EstadoPartida.TERMINADA;
+    notificarObservadores();
+  }
+
+  private Jugador buscarJugador(String nombre) {
+    if (nombre == null || nombre.isBlank()) {
+      return null;
+    }
+    String buscado = nombre.trim();
+    for (Jugador jugador : jugadores) {
+      if (jugador.obtenerNombre().equalsIgnoreCase(buscado)) {
+        return jugador;
+      }
+    }
+    return null;
   }
 
   public void registrarError(String mensaje) {

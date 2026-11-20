@@ -5,15 +5,15 @@ import comun.evento.EventoIniciarPartida;
 import comun.evento.EventoMarcarCasilla;
 import comun.evento.EventoSeleccionarPatron;
 import comun.evento.EventoGritarLoteria;
-import comun.EstadoJuego;
 import comun.evento.Evento;
 import comun.evento.Tema;
-import comun.evento.EventoCartaCantada;
+import comun.evento.EventoCasillaMarcada;
 import comun.evento.EventoError;
 import comun.evento.EventoPartidaFinalizada;
-import comun.evento.EventoEstadoSincronizado;
 import comun.evento.EventoPartidaGanada;
-import comun.JugadorMensaje;
+import comun.evento.EventoPartidaIniciada;
+import comun.evento.EventoPatronDeclarado;
+import comun.evento.EventoPuntajeActualizado;
 import comunicacion.api.IDispatcher;
 import comunicacion.api.IReceptorExterno;
 import dominio.griton.Griton;
@@ -27,6 +27,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.OptionalInt;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -225,7 +226,7 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
 
   private void iniciarPartida(String jugador) {
     if (partida != null && !partida.estaFinalizada()) {
-      publicar(new EventoEstadoSincronizado(estadoJuego()));
+      publicar(eventoPartidaIniciada());
       return;
     }
     if (jugador == null || jugador.isBlank()
@@ -247,7 +248,6 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
       System.out.println("Jugador conectado: " + limpio
         + " (" + humanos.size() + " en espera)");
     }
-    publicar(new EventoEstadoSincronizado(estadoJuego()));
   }
 
   private void iniciarEspera() {
@@ -282,7 +282,7 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
     partida = Partida.crear(jugadores, PATRON_VICTORIA, aleatorio);
     partida.iniciar();
     griton.iniciar();
-    publicar(new EventoEstadoSincronizado(estadoJuego()));
+    publicar(eventoPartidaIniciada());
   }
 
   private ScheduledExecutorService crearPlanificador(String nombre) {
@@ -305,17 +305,23 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
   }
 
   @Override
-  public EstadoJuego cantarSiguienteCarta() {
+  public OptionalInt cantarSiguienteCarta() {
     synchronized (candado) {
       if (!activo || partida == null || !partida.estaEnCurso()) {
-        return null;
+        return OptionalInt.empty();
       }
       if (!partida.puedeCantar()) {
         finalizarPartida();
-        return null;
+        return OptionalInt.empty();
       }
-      partida.cantarSiguiente();
-      return estadoJuego();
+      return OptionalInt.of(partida.cantarSiguiente().obtenerId());
+    }
+  }
+
+  @Override
+  public int obtenerRestantes() {
+    synchronized (candado) {
+      return partida == null ? 0 : partida.obtenerRestantes();
     }
   }
 
@@ -335,7 +341,8 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
         publicar(new EventoError("La casilla ya estaba marcada"));
         return;
       }
-      publicar(new EventoEstadoSincronizado(estadoJuego()));
+      publicar(new EventoCasillaMarcada(
+        jugador.obtenerNombre(), carta.obtenerId(), jugador.obtenerPuntos()));
     } catch (RuntimeException e) {
       publicarErrorSeguro(e);
     }
@@ -358,7 +365,8 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
           + " no está completo o ya fue declarado"));
         return;
       }
-      publicar(new EventoEstadoSincronizado(estadoJuego()));
+      publicar(new EventoPatronDeclarado(
+        jugador.obtenerNombre(), tipo.name(), jugador.obtenerPuntos()));
     } catch (RuntimeException e) {
       publicarErrorSeguro(e);
     }
@@ -378,11 +386,13 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
       if (!partida.gritarLoteria(jugador.obtenerId())) {
         publicar(new EventoError("Todavía no completas el patrón "
           + partida.obtenerTipoVictoria().obtenerDescripcion()));
-        publicar(new EventoEstadoSincronizado(estadoJuego()));
+        publicar(new EventoPuntajeActualizado(
+          jugador.obtenerNombre(), jugador.obtenerPuntos()));
         return;
       }
       griton.detener();
-      publicar(new EventoPartidaGanada(estadoJuego()));
+      publicar(new EventoPartidaGanada(
+        jugador.obtenerNombre(), jugador.obtenerPuntos()));
     } catch (RuntimeException e) {
       publicarErrorSeguro(e);
     }
@@ -398,7 +408,7 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
     } else {
       partida.finalizar();
     }
-    publicar(new EventoPartidaFinalizada(estadoJuego()));
+    publicar(new EventoPartidaFinalizada());
   }
 
   private TipoVictoria convertirTipoVictoria(String patron) {
@@ -458,11 +468,17 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
   }
 
   private Tema temaDe(Serializable evento) {
-    if (evento instanceof EventoCartaCantada) {
-      return Tema.CARTA_CANTADA;
+    if (evento instanceof EventoPartidaIniciada) {
+      return Tema.PARTIDA_INICIADA;
     }
-    if (evento instanceof EventoEstadoSincronizado) {
-      return Tema.ESTADO_SINCRONIZADO;
+    if (evento instanceof EventoCasillaMarcada) {
+      return Tema.CASILLA_MARCADA;
+    }
+    if (evento instanceof EventoPatronDeclarado) {
+      return Tema.PATRON_DECLARADO;
+    }
+    if (evento instanceof EventoPuntajeActualizado) {
+      return Tema.PUNTAJE_ACTUALIZADO;
     }
     if (evento instanceof EventoPartidaGanada) {
       return Tema.PARTIDA_GANADA;
@@ -476,48 +492,19 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
     throw new IllegalArgumentException("Evento sin tema: " + evento.getClass().getSimpleName());
   }
 
-  private EstadoJuego estadoJuego() {
-    if (partida == null) {
-      return new EstadoJuego("", "", PATRON_VICTORIA.name(), List.of(),
-        List.of(), 0, "");
+  private EventoPartidaIniciada eventoPartidaIniciada() {
+    List<String> nombres = new ArrayList<>();
+    List<List<Integer>> cartasPorJugador = new ArrayList<>();
+    if (partida != null) {
+      for (Jugador jugador : partida.obtenerJugadores()) {
+        nombres.add(jugador.obtenerNombre());
+        List<Integer> cartas = new ArrayList<>();
+        for (Casilla casilla : jugador.obtenerTablero().obtenerCasillas()) {
+          cartas.add(casilla.obtenerCarta().obtenerId());
+        }
+        cartasPorJugador.add(cartas);
+      }
     }
-    List<JugadorMensaje> jugadores = new ArrayList<>();
-    for (Jugador jugador : partida.obtenerJugadores()) {
-      jugadores.add(convertirJugador(jugador));
-    }
-    List<Integer> cantadas = new ArrayList<>();
-    for (Carta carta : partida.obtenerCartasCantadas()) {
-      cantadas.add(carta.obtenerId());
-    }
-    String ganador = partida.obtenerGanador()
-      .map(Jugador::obtenerNombre)
-      .orElse("");
-    return new EstadoJuego(
-      partida.obtenerId(),
-      partida.obtenerEstado().name(),
-      partida.obtenerTipoVictoria().name(),
-      jugadores,
-      cantadas,
-      partida.obtenerRestantes(),
-      ganador
-    );
-  }
-
-  private JugadorMensaje convertirJugador(Jugador jugador) {
-    List<Integer> cartas = new ArrayList<>();
-    for (Casilla casilla : jugador.obtenerTablero().obtenerCasillas()) {
-      cartas.add(casilla.obtenerCarta().obtenerId());
-    }
-    List<Integer> marcadas = new ArrayList<>();
-    for (Carta carta : jugador.obtenerTablero().obtenerCartasMarcadas()) {
-      marcadas.add(carta.obtenerId());
-    }
-    return new JugadorMensaje(
-      jugador.obtenerId(),
-      jugador.obtenerNombre(),
-      cartas,
-      marcadas,
-      jugador.obtenerPuntos()
-    );
+    return new EventoPartidaIniciada(nombres, cartasPorJugador, obtenerRestantes());
   }
 }
