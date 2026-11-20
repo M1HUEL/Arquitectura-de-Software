@@ -1,5 +1,7 @@
 package juego.modelo;
 
+import comun.CartasLoteria;
+
 public class Carta {
 
   private final int id;
@@ -14,6 +16,10 @@ public class Carta {
     }
     this.id = id;
     this.nombre = nombre.trim();
+  }
+
+  public static Carta desdeId(int id) {
+    return new Carta(id, CartasLoteria.nombreDe(id));
   }
 
   public int obtenerId() {

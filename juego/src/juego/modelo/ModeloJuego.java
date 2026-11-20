@@ -68,7 +68,7 @@ public class ModeloJuego implements Modelo {
   public void seleccionarCasilla(Carta carta, Jugador jugador) {
     if (esCasillaValida(carta, jugador)) {
       try {
-        fachada.seleccionarCasilla(carta);
+        fachada.seleccionarCasilla(carta.obtenerId());
       } catch (RuntimeException e) {
         registrarError("No se pudo enviar la jugada: " + e.getMessage());
       }

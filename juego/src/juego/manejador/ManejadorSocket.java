@@ -1,6 +1,5 @@
 package juego.manejador;
 
-import comun.CartaMensaje;
 import comun.EstadoJuego;
 import comun.evento.Evento;
 import comun.evento.EventoCartaCantada;
@@ -97,12 +96,10 @@ public class ManejadorSocket implements IReceptorExterno {
   private List<Jugador> convertirJugadores(List<JugadorMensaje> mensajes) {
     List<Jugador> resultado = new ArrayList<>();
     for (JugadorMensaje mensaje : mensajes) {
-      List<Carta> cartas = new ArrayList<>();
+      List<Carta> cartas = convertirCartas(mensaje.cartas());
       Map<Integer, Carta> cartasPorId = new HashMap<>();
-      for (CartaMensaje cartaMensaje : mensaje.cartas()) {
-        Carta carta = new Carta(cartaMensaje.id(), cartaMensaje.nombre());
-        cartas.add(carta);
-        cartasPorId.put(cartaMensaje.id(), carta);
+      for (Carta carta : cartas) {
+        cartasPorId.put(carta.obtenerId(), carta);
       }
       Jugador jugador = new Jugador(mensaje.nombre(), cartas);
       for (Integer id : mensaje.marcadas()) {
@@ -117,10 +114,10 @@ public class ManejadorSocket implements IReceptorExterno {
     return List.copyOf(resultado);
   }
 
-  private List<Carta> convertirCartas(List<CartaMensaje> mensajes) {
+  private List<Carta> convertirCartas(List<Integer> ids) {
     List<Carta> resultado = new ArrayList<>();
-    for (CartaMensaje mensaje : mensajes) {
-      resultado.add(new Carta(mensaje.id(), mensaje.nombre()));
+    for (Integer id : ids) {
+      resultado.add(Carta.desdeId(id));
     }
     return List.copyOf(resultado);
   }

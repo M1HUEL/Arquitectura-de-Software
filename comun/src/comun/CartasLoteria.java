@@ -63,4 +63,11 @@ public final class CartasLoteria {
 
   private CartasLoteria() {
   }
+
+  public static String nombreDe(int id) {
+    if (id < 1 || id > NOMBRES.size()) {
+      throw new IllegalArgumentException("No existe una carta con id " + id);
+    }
+    return NOMBRES.get(id - 1);
+  }
 }

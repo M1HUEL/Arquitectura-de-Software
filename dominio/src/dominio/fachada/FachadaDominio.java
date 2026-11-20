@@ -1,6 +1,5 @@
 package dominio.fachada;
 
-import comun.CartaMensaje;
 import comun.evento.EventoCerrarPartida;
 import comun.evento.EventoIniciarPartida;
 import comun.evento.EventoMarcarCasilla;
@@ -486,9 +485,9 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
     for (Jugador jugador : partida.obtenerJugadores()) {
       jugadores.add(convertirJugador(jugador));
     }
-    List<CartaMensaje> cantadas = new ArrayList<>();
+    List<Integer> cantadas = new ArrayList<>();
     for (Carta carta : partida.obtenerCartasCantadas()) {
-      cantadas.add(convertirCarta(carta));
+      cantadas.add(carta.obtenerId());
     }
     String ganador = partida.obtenerGanador()
       .map(Jugador::obtenerNombre)
@@ -505,9 +504,9 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
   }
 
   private JugadorMensaje convertirJugador(Jugador jugador) {
-    List<CartaMensaje> cartas = new ArrayList<>();
+    List<Integer> cartas = new ArrayList<>();
     for (Casilla casilla : jugador.obtenerTablero().obtenerCasillas()) {
-      cartas.add(convertirCarta(casilla.obtenerCarta()));
+      cartas.add(casilla.obtenerCarta().obtenerId());
     }
     List<Integer> marcadas = new ArrayList<>();
     for (Carta carta : jugador.obtenerTablero().obtenerCartasMarcadas()) {
@@ -520,9 +519,5 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
       marcadas,
       jugador.obtenerPuntos()
     );
-  }
-
-  private CartaMensaje convertirCarta(Carta carta) {
-    return new CartaMensaje(carta.obtenerId(), carta.obtenerNombre());
   }
 }

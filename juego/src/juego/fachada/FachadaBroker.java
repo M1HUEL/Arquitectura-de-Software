@@ -8,7 +8,6 @@ import comun.evento.EventoGritarLoteria;
 import comun.evento.Evento;
 import comun.evento.Tema;
 import comunicacion.api.IDispatcher;
-import juego.modelo.Carta;
 import juego.modelo.Patron;
 import comun.serializador.ISerializador;
 import java.io.Serializable;
@@ -61,10 +60,8 @@ public class FachadaBroker implements Fachada {
   }
 
   @Override
-  public void seleccionarCasilla(Carta carta) {
-    if (carta != null) {
-      enviar(new EventoMarcarCasilla(jugadorLocal, carta.obtenerId()));
-    }
+  public void seleccionarCasilla(int cartaId) {
+    enviar(new EventoMarcarCasilla(jugadorLocal, cartaId));
   }
 
   @Override

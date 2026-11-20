@@ -1,6 +1,5 @@
 package juego.fachada;
 
-import juego.modelo.Carta;
 import juego.modelo.Patron;
 
 public interface Fachada {
@@ -9,7 +8,7 @@ public interface Fachada {
 
   void cerrar();
 
-  void seleccionarCasilla(Carta carta);
+  void seleccionarCasilla(int cartaId);
 
   void seleccionarPatron(Patron patron);
 

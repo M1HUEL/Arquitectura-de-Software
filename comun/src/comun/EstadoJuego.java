@@ -9,7 +9,7 @@ public record EstadoJuego(
   String estado,
   String patron,
   List<JugadorMensaje> jugadores,
-  List<CartaMensaje> cartasCantadas,
+  List<Integer> cartasCantadas,
   int restantes,
   String ganador
 ) implements Serializable {

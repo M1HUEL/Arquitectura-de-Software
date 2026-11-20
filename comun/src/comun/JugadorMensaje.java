@@ -7,7 +7,7 @@ import java.util.List;
 public record JugadorMensaje(
   String id,
   String nombre,
-  List<CartaMensaje> cartas,
+  List<Integer> cartas,
   List<Integer> marcadas,
   int puntos
 ) implements Serializable {
