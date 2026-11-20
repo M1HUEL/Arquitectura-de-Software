@@ -52,9 +52,7 @@ public class Dominio implements IReceptorExterno {
   private final Object candado = new Object();
 
   private Partida partida;
-  private ScheduledExecutorService temporizador;
   private ScheduledExecutorService temporizadorEspera;
-  private ScheduledFuture<?> tareaCartas;
   private ScheduledFuture<?> tareaEspera;
   private volatile boolean activo;
 
@@ -187,7 +185,9 @@ public class Dominio implements IReceptorExterno {
   public void detener() {
     synchronized (candado) {
       activo = false;
-      detenerTemporizador();
+      if (partida != null) {
+        partida.detenerGriton();
+      }
       detenerEspera();
     }
   }
@@ -308,25 +308,23 @@ public class Dominio implements IReceptorExterno {
 
   private void crearPartida(List<String> jugadores) {
     detenerEspera();
-    partida = Partida.crear(jugadores, PATRON_VICTORIA, aleatorio);
+    partida = Partida.crear(jugadores, PATRON_VICTORIA, aleatorio,
+      intervaloMs, this::cantarDesdeGriton);
     partida.iniciar();
-    detenerTemporizador();
     publicar(new EventoEstadoSincronizado(estadoJuego()));
     cantarSiguiente();
-    if (partida.estaEnCurso() && partida.puedeCantar()) {
-      temporizador = crearPlanificador("dominio-cartas");
-      tareaCartas = temporizador.scheduleWithFixedDelay(() -> {
-        synchronized (candado) {
-          if (!activo) {
-            return;
-          }
-          try {
-            cantarSiguiente();
-          } catch (RuntimeException e) {
-            publicarErrorSeguro(e);
-          }
-        }
-      }, intervaloMs, intervaloMs, TimeUnit.MILLISECONDS);
+  }
+
+  private void cantarDesdeGriton() {
+    synchronized (candado) {
+      if (!activo) {
+        return;
+      }
+      try {
+        cantarSiguiente();
+      } catch (RuntimeException e) {
+        publicarErrorSeguro(e);
+      }
     }
   }
 
@@ -351,7 +349,9 @@ public class Dominio implements IReceptorExterno {
 
   private void cantarSiguiente() {
     if (partida == null || !partida.estaEnCurso()) {
-      detenerTemporizador();
+      if (partida != null) {
+        partida.detenerGriton();
+      }
       return;
     }
     if (!partida.puedeCantar()) {
@@ -424,7 +424,7 @@ public class Dominio implements IReceptorExterno {
         publicar(new EventoEstadoSincronizado(estadoJuego()));
         return;
       }
-      detenerTemporizador();
+      partida.detenerGriton();
       publicar(new EventoPartidaGanada(estadoJuego()));
     } catch (RuntimeException e) {
       publicarErrorSeguro(e);
@@ -435,7 +435,7 @@ public class Dominio implements IReceptorExterno {
     if (partida == null || partida.estaFinalizada()) {
       return;
     }
-    detenerTemporizador();
+    partida.detenerGriton();
     if (partida.obtenerRestantes() == 0 && partida.estaEnCurso()) {
       partida.cerrarPorBarajaAgotada();
     } else {
@@ -547,16 +547,5 @@ public class Dominio implements IReceptorExterno {
 
   private CartaMensaje convertirCarta(Carta carta) {
     return new CartaMensaje(carta.obtenerId(), carta.obtenerNombre());
-  }
-
-  private void detenerTemporizador() {
-    if (tareaCartas != null) {
-      tareaCartas.cancel(false);
-      tareaCartas = null;
-    }
-    if (temporizador != null) {
-      temporizador.shutdown();
-      temporizador = null;
-    }
   }
 }

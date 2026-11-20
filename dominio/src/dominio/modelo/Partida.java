@@ -1,5 +1,6 @@
 package dominio.modelo;
 
+import dominio.griton.Griton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -43,10 +44,12 @@ public final class Partida {
     this.estado = EstadoPartida.CREADA;
   }
 
-  public static Partida crear(List<String> nombresJugadores, TipoVictoria tipoVictoria, Random aleatorio) {
+  public static Partida crear(List<String> nombresJugadores, TipoVictoria tipoVictoria,
+    Random aleatorio, long intervaloMs, Runnable accionGritar) {
     Objects.requireNonNull(nombresJugadores, "nombresJugadores");
     Objects.requireNonNull(tipoVictoria, "tipoVictoria");
     Objects.requireNonNull(aleatorio, "aleatorio");
+    Objects.requireNonNull(accionGritar, "accionGritar");
     if (nombresJugadores.isEmpty()) {
       throw new IllegalArgumentException("La partida debe tener al menos un jugador");
     }
@@ -62,12 +65,18 @@ public final class Partida {
       }
       jugadores.add(new Jugador(limpio, Tablero.generar(aleatorio)));
     }
-    return new Partida(UUID.randomUUID().toString(), jugadores, Griton.completo(aleatorio), tipoVictoria);
+    return new Partida(UUID.randomUUID().toString(), jugadores,
+      Griton.completo(aleatorio, intervaloMs, accionGritar), tipoVictoria);
   }
 
   public void iniciar() {
     exigirEstado(EstadoPartida.CREADA);
     estado = EstadoPartida.EN_CURSO;
+    griton.iniciar();
+  }
+
+  public void detenerGriton() {
+    griton.detener();
   }
 
   public void pausar() {
