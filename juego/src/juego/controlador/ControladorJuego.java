@@ -21,7 +21,7 @@ public class ControladorJuego {
     modelo.seleccionarPatron(jugador, patron);
   }
 
-  public void seleccionarVictoria(Jugador jugador, Patron patron) {
-    modelo.seleccionarVictoria(jugador, patron);
+  public void seleccionarVictoria(Jugador jugador) {
+    modelo.seleccionarVictoria(jugador);
   }
 }

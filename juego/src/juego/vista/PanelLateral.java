@@ -30,7 +30,6 @@ public class PanelLateral extends JPanel {
   private final JLabel etiquetaEstado;
   private final JLabel etiquetaJugadorLocal;
   private final DefaultListModel<String> modeloListaJugadores;
-  private Patron patronSeleccionado = Patron.CHORRO;
 
   public PanelLateral(
     Modelo modelo,
@@ -58,7 +57,6 @@ public class PanelLateral extends JPanel {
     for (Patron patron : Patron.values()) {
       JButton botonPatron = new JButton(patron.name());
       botonPatron.addActionListener(evento -> {
-        patronSeleccionado = patron;
         Jugador local = this.jugadorLocal.get();
         if (local != null) {
           seleccionarPatron(local, patron);
@@ -71,7 +69,7 @@ public class PanelLateral extends JPanel {
     botonCantarVictoria.addActionListener(evento -> {
       Jugador local = this.jugadorLocal.get();
       if (local != null) {
-        seleccionarVictoria(local, patronSeleccionado);
+        seleccionarVictoria(local);
       }
     });
 
@@ -164,8 +162,8 @@ public class PanelLateral extends JPanel {
     controlador.seleccionarPatron(jugador, patron);
   }
 
-  public void seleccionarVictoria(Jugador jugador, Patron patron) {
-    controlador.seleccionarVictoria(jugador, patron);
+  public void seleccionarVictoria(Jugador jugador) {
+    controlador.seleccionarVictoria(jugador);
   }
 
   private String formatearEstado(EstadoPartida estado) {

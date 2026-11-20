@@ -146,11 +146,11 @@ public class ModeloJuego implements Modelo {
       ? TipoMensaje.PATRON_VALIDO : TipoMensaje.PATRON_INVALIDO);
   }
 
-  public void seleccionarVictoria(Jugador jugador, Patron patron) {
-    boolean valido = puedeEnviarPatron(jugador, patron);
+  public void seleccionarVictoria(Jugador jugador) {
+    boolean valido = puedeJugar(jugador);
     if (valido) {
       try {
-        fachada.seleccionarVictoria(patron);
+        fachada.seleccionarVictoria();
       } catch (RuntimeException e) {
         registrarError("No se pudo enviar la victoria: " + e.getMessage());
         return;

@@ -12,5 +12,5 @@ public interface Fachada {
 
   void seleccionarPatron(Patron patron);
 
-  void seleccionarVictoria(Patron patron);
+  void seleccionarVictoria();
 }

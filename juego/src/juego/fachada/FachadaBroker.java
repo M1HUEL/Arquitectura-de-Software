@@ -55,7 +55,7 @@ public class FachadaBroker implements Fachada {
 
   @Override
   public void cerrar() {
-    enviar(new EventoCerrarPartida(jugadorLocal));
+    enviar(new EventoCerrarPartida());
   }
 
   @Override
@@ -71,10 +71,8 @@ public class FachadaBroker implements Fachada {
   }
 
   @Override
-  public void seleccionarVictoria(Patron patron) {
-    if (patron != null) {
-      enviar(new EventoGritarLoteria(jugadorLocal, patron.name()));
-    }
+  public void seleccionarVictoria() {
+    enviar(new EventoGritarLoteria(jugadorLocal));
   }
 
   private void enviar(Instruccion contenido) {

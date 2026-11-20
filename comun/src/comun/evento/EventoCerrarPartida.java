@@ -1,6 +1,6 @@
 package comun.evento;
 
-public record EventoCerrarPartida(String jugador) implements Instruccion {
+public record EventoCerrarPartida() implements Instruccion {
 
   @Override
   public Tema tema() {
