@@ -1,4 +1,4 @@
-package juego.manejador;
+package juego.receptor;
 
 import comun.evento.Evento;
 import comun.evento.EventoCartaCantada;
@@ -18,12 +18,12 @@ import juego.modelo.ModeloJuego;
 import javax.swing.SwingUtilities;
 import comun.serializador.ISerializador;
 
-public class ManejadorSocket implements IReceptorExterno {
+public class ReceptorJuego implements IReceptorExterno {
 
   private final ISerializador serializador;
   private final ModeloJuego modelo;
 
-  public ManejadorSocket(ISerializador serializador, ModeloJuego modelo) {
+  public ReceptorJuego(ISerializador serializador, ModeloJuego modelo) {
     if (serializador == null) {
       throw new IllegalArgumentException("El serializador no puede ser nulo");
     }

@@ -14,7 +14,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import juego.controlador.ControladorJuego;
 import juego.fachada.FachadaBroker;
-import juego.manejador.ManejadorSocket;
+import juego.receptor.ReceptorJuego;
 import juego.modelo.ModeloJuego;
 import juego.vista.VistaJuego;
 import comun.evento.Tema;
@@ -151,8 +151,8 @@ public class Main {
       FachadaBroker fachada = new FachadaBroker(
         nombre, hostBroker, puertoBroker, serializador, dispatcher);
       ModeloJuego modelo = new ModeloJuego(nombre, fachada);
-      ManejadorSocket manejador = new ManejadorSocket(serializador, modelo);
-      Receptor receptor = new Receptor(manejador);
+      ReceptorJuego receptorJuego = new ReceptorJuego(serializador, modelo);
+      Receptor receptor = new Receptor(receptorJuego);
       ControladorJuego controlador = new ControladorJuego(modelo);
       VistaJuego vista = new VistaJuego(modelo, controlador);
       vista.addWindowListener(new WindowAdapter() {
