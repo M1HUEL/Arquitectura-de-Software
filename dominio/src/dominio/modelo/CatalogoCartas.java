@@ -25,22 +25,4 @@ public final class CatalogoCartas {
       .orElseThrow(() -> new NoSuchElementException("No existe una carta con id " + id));
   }
 
-  public static Carta obtenerPorNombre(String nombre) {
-    if (nombre == null || nombre.isBlank()) {
-      throw new IllegalArgumentException("El nombre de la carta no puede estar vacío");
-    }
-    String buscado = nombre.trim();
-    return CARTAS.stream()
-      .filter(carta -> carta.obtenerNombre().equalsIgnoreCase(buscado))
-      .findFirst()
-      .orElseThrow(() -> new NoSuchElementException("No existe una carta llamada " + buscado));
-  }
-
-  public static boolean contiene(Carta carta) {
-    return carta != null && CARTAS.contains(carta);
-  }
-
-  public static int obtenerTotal() {
-    return CARTAS.size();
-  }
 }

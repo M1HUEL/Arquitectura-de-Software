@@ -76,18 +76,8 @@ public final class Partida {
     estado = EstadoPartida.EN_CURSO;
   }
 
-  public void pausar() {
-    exigirEstado(EstadoPartida.EN_CURSO);
-    estado = EstadoPartida.PAUSADA;
-  }
-
-  public void reanudar() {
-    exigirEstado(EstadoPartida.PAUSADA);
-    estado = EstadoPartida.EN_CURSO;
-  }
-
   public void finalizar() {
-    exigirEstado(EstadoPartida.EN_CURSO, EstadoPartida.PAUSADA);
+    exigirEstado(EstadoPartida.EN_CURSO);
     estado = EstadoPartida.FINALIZADA;
   }
 

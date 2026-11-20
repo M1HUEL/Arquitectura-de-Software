@@ -2,7 +2,7 @@ package dominio.modelo;
 
 import java.util.Objects;
 
-public final class Carta implements Comparable<Carta> {
+public final class Carta {
 
   private final int id;
   private final String nombre;
@@ -24,11 +24,6 @@ public final class Carta implements Comparable<Carta> {
 
   public String obtenerNombre() {
     return nombre;
-  }
-
-  @Override
-  public int compareTo(Carta otra) {
-    return Integer.compare(id, otra.id);
   }
 
   @Override
