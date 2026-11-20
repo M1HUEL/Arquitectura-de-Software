@@ -1,6 +1,6 @@
 package dominio.fachada;
 
-import java.util.OptionalInt;
+import java.util.Optional;
 
 public interface Fachada {
 
@@ -10,7 +10,5 @@ public interface Fachada {
 
   boolean estaActivo();
 
-  OptionalInt cantarSiguienteCarta();
-
-  int obtenerRestantes();
+  Optional<CartaCantada> cantarSiguienteCarta();
 }

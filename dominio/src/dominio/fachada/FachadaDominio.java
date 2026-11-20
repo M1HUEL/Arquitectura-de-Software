@@ -26,7 +26,7 @@ import dominio.modelo.TipoVictoria;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.OptionalInt;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -257,23 +257,17 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
   }
 
   @Override
-  public OptionalInt cantarSiguienteCarta() {
+  public Optional<CartaCantada> cantarSiguienteCarta() {
     synchronized (candado) {
       if (!activo || partida == null || !partida.estaEnCurso()) {
-        return OptionalInt.empty();
+        return Optional.empty();
       }
       if (!partida.puedeCantar()) {
         finalizarPartida();
-        return OptionalInt.empty();
+        return Optional.empty();
       }
-      return OptionalInt.of(partida.cantarSiguiente().obtenerId());
-    }
-  }
-
-  @Override
-  public int obtenerRestantes() {
-    synchronized (candado) {
-      return partida == null ? 0 : partida.obtenerRestantes();
+      Carta carta = partida.cantarSiguiente();
+      return Optional.of(new CartaCantada(carta.obtenerId(), partida.obtenerRestantes()));
     }
   }
 
@@ -435,6 +429,7 @@ public class FachadaDominio implements Fachada, IReceptorExterno {
         cartasPorJugador.add(cartas);
       }
     }
-    return new EventoPartidaIniciada(nombres, cartasPorJugador, obtenerRestantes());
+    return new EventoPartidaIniciada(
+      nombres, cartasPorJugador, partida == null ? 0 : partida.obtenerRestantes());
   }
 }

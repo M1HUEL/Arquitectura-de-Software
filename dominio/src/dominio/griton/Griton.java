@@ -4,9 +4,10 @@ import comun.evento.Evento;
 import comun.evento.EventoCartaCantada;
 import comun.serializador.ISerializador;
 import comunicacion.api.IDispatcher;
+import dominio.fachada.CartaCantada;
 import dominio.fachada.Fachada;
 import java.util.Objects;
-import java.util.OptionalInt;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -65,12 +66,13 @@ public final class Griton {
 
   private void cantar() {
     try {
-      OptionalInt carta = fachada.cantarSiguienteCarta();
-      if (carta.isEmpty()) {
+      Optional<CartaCantada> resultado = fachada.cantarSiguienteCarta();
+      if (resultado.isEmpty()) {
         return;
       }
-      EventoCartaCantada contenido = new EventoCartaCantada(
-        carta.getAsInt(), fachada.obtenerRestantes());
+      CartaCantada cantada = resultado.get();
+      EventoCartaCantada contenido =
+        new EventoCartaCantada(cantada.cartaId(), cantada.restantes());
       byte[] datos = serializador.serializar(new Evento(contenido));
       dispatcher.enviar(hostBroker, puertoBroker, datos);
     } catch (RuntimeException e) {
